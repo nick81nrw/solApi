@@ -8,6 +8,28 @@ const app = express()
 const PORT = process.env.PORT || 5555
 
 
+const getPrices = async ({start, end}) => {
+
+    if (typeof start == 'string' && start.match(/^\d{4}-([0]\d|1[0-2])-([0-2]\d|3[01])$/)) start = (new Date(start).setHours(0,0,0,0))
+    if (typeof end == 'string' && end.match(/^\d{4}-([0]\d|1[0-2])-([0-2]\d|3[01])$/)) end = (new Date(end).setHours(24,0,0,0))
+    
+    if (typeof start == 'string' && start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)((-(\d{2}):(\d{2})|Z)?)$/)) start = (new Date(start))
+    if (typeof end == 'string' && end.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)((-(\d{2}):(\d{2})|Z)?)$/)) end = (new Date(end))
+    console.log(start, end)
+    const params = {start, end}
+
+    const response = await axios.get('https://api.awattar.de/v1/marketdata',{params})
+
+    const result = response.data.data.map(val => {
+        val.start = new Date(val.start_timestamp).toISOString()
+        val.end = new Date(val.end_timestamp).toISOString()
+        val.marketpriceEurocentPerKWh = parseFloat((val.marketprice / 10).toFixed(2))
+        return val
+    })
+
+    return result
+}
+
 const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency}) => {
 
     const pvVectors = [
@@ -66,8 +88,6 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
             diffuseRad,
             shortwaveRad,
             temperature,
-
-
         }
 
     })
@@ -119,6 +139,8 @@ app.get(['/forecast', '/archive'], async (req,res) => {
         forecast_days
     }
     
+
+
     if (req.path == '/forecast') {
 
         const params = {...baseParams,forecast_days}
@@ -126,6 +148,7 @@ app.get(['/forecast', '/archive'], async (req,res) => {
         // https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&forecast_days=1
         const response = await axios.get('https://api.open-meteo.com/v1/dwd-icon',{params})
         const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency})
+        
 
         res.send({meta, values})
     
@@ -166,11 +189,17 @@ app.get(['/forecast', '/archive'], async (req,res) => {
 })
 
 
-app.get('/archive', async (req,res) => {
+app.get('/prices', async (req,res) => {
 
 
     // https://archive-api.open-meteo.com/v1/archive?latitude=52.52&longitude=13.41&start_date=2023-05-25&end_date=2023-06-10&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&timezone=Europe%2FBerlin&min=2023-05-27&max=2023-06-10
+    
+    const start = req.query.start || (new Date().setHours(0,0,0,0))
+    const end = req.query.end || (new Date().setHours(24,0,0,0))
 
+    const result = await getPrices({start, end})
+
+    return res.send(result)
 
 })
 

@@ -295,6 +295,75 @@
           }
         }
       }
+    },
+    "/prices": {
+      "get": {
+        "tags": [
+          "prices"
+        ],
+        "summary": "Get energy price data",
+        "description": "get price data for a defined range",
+        "operationId": "getPrices",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "description": "start date or datetime. default: default: today 0 am",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "date": {
+                "value": "2023-06-01"
+              },
+              "datetime": {
+                "value": "2023-06-01T05:00:00"
+              }
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "description": "end date or datetime. default: default: today 12 pm",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "date": {
+                "value": "2023-06-05"
+              },
+              "datetime": {
+                "value": "2023-06-05T20:00:00"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Forecast"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/Forecast"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid ID supplied"
+          },
+          "404": {
+            "description": "Pet not found"
+          }
+        }
+      }
     }
   },
   "components": {
