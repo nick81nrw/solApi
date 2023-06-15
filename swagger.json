@@ -40,7 +40,7 @@
         ],
         "summary": "Get forcast data",
         "description": "get pv power from a location ",
-        "operationId": "getPetById",
+        "operationId": "getForecast",
         "parameters": [
           {
             "name": "lat",
