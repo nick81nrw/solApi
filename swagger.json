@@ -140,6 +140,136 @@
             },
             "example": 0.95
           }
+        ]
+      }
+    },
+    "/archive": {
+      "get": {
+        "tags": [
+          "archive"
+        ],
+        "summary": "Get archive data",
+        "description": "get pv power from a location ",
+        "operationId": "getArchive",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "description": "latitude for location",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "example": 55.45
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "description": "longitude for location",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "example": 8.14
+          },
+          {
+            "name": "power",
+            "in": "query",
+            "description": "power pv modules in watts",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "example": 3400
+          },
+          {
+            "name": "azimuth",
+            "in": "query",
+            "description": "orientation of pv modules in azimuth in degree\n0 = south\n-45 = south-east\n-90 = east\n45 = south-west\n90 = west",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "example": -30
+          },
+          {
+            "name": "tilt",
+            "in": "query",
+            "description": "tilt of pv modules degree\n0 = flat / horizontal\n30 = 30° tilt (on a roof)\n90 = vertical (at a wall)",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "example": 35
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "date from which the data sould load. default 7 days before today",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2023-05-06T00:00:00.000Z"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "date until which the data sould load. default yesterday",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2023-05-10T00:00:00.000Z"
+          },
+          {
+            "name": "cellCoEff",
+            "in": "query",
+            "description": "cellcoefficient of your pv modules. It is used for calculate losses with the temperature of the modules. Value in percent. default: -0.4",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "example": -0.36
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "description": "timezone. default: Europe/Berlin",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "Europe/Berlin"
+          },
+          {
+            "name": "powerInvertor",
+            "in": "query",
+            "description": "max power of the invertor in watts. it will used, if the power of the invertor is lower than the power generation of the modules. default: no limit",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "example": 4500
+          },
+          {
+            "name": "inverterEfficiency",
+            "in": "query",
+            "description": "inverter efficiency. default: 1 (=100%)",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "example": 0.95
+          }
         ],
         "responses": {
           "200": {

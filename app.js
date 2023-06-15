@@ -81,32 +81,21 @@ const calcCellTemperature = (temperature, totalRadiotionOnCell) => {
     return temperature + 0.0342*totalRadiotionOnCell
 }
 
-app.get('/forecast', async (req,res) => {
+app.get(['/forecast', '/archive'], async (req,res) => {
+    
     let {lat, lon, power, azimuth, tilt} = req.query
     if (!lat || !lon || !power || !azimuth || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given'})
-
     power = parseFloat(power)
+    // lat = parseFloat(lat)
+    // lon = parseFloat(lon)
+    // azimuth = parseFloat(azimuth)
+    // tilt = parseFloat(tilt)
     const albedo = req.query.albedo || 0.2
     const cellCoEff = req.query.cellCoEff || -0.4
     const powerInverter = req.query.powerInverter || power
     const inverterEfficiency = req.query.inverterEfficiency || 1
     const timezone = req.query.timezone || 'Europe/Berlin'
-
-    const params = {
-        latitude: lat,
-        longitude: lon,
-        hourly: 'temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance',
-        forecast_days:1,
-        timezone 
-
-    }
-
-    // https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&forecast_days=1
-    // const response = await axios.get('https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&forecast_days=1')
-    const response = await axios.get('https://api.open-meteo.com/v1/forecast',{params})
-
-    const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInverter, inverterEfficiency})
-    // console.log(response)
+    const forecast_days = req.query.forecast_days || 0
 
     const meta = {
         lat,
@@ -116,9 +105,73 @@ app.get('/forecast', async (req,res) => {
         tilt,
         timezone,
         albedo,
+        forecast_days,
+        inverterEfficiency,
+        powerInverter,
+        cellCoEff
     }
 
-    res.send({meta, values})
+    const params = {
+        latitude: lat,
+        longitude: lon,
+        hourly: 'temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance',
+        forecast_days:1,
+        timezone,
+        forecast_days
+    }
+    
+    if (req.path == '/forecast') {
+
+    
+        // https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&forecast_days=1
+        const response = await axios.get('https://api.open-meteo.com/v1/dwd-icon',{params})
+        const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInverter, inverterEfficiency})
+
+        res.send({meta, values})
+    
+    
+        
+    } else if (req.path == '/archive') {
+        const yesterday = new Date(new Date() - (1 * 24 * 60 * 60 * 1000))
+        const lastWeek = new Date(yesterday - (7 * 24 * 60 *60 * 1000))
+
+        yesterdayString = `${yesterday.getFullYear()}-${("0" + (yesterday.getMonth()+1)).slice(-2)}-${("0" + yesterday.getDate()).slice(-2)}`
+        lastWeekString = `${lastWeek.getFullYear()}-${("0" + (lastWeek.getMonth()+1)).slice(-2)}-${("0" + lastWeek.getDate()).slice(-2)}`
+        console.log(yesterdayString, lastWeekString)
+
+
+        const start_date = req.query.start_date || lastWeekString //`${lastWeek.getFullYear}-${lastWeek.getMonth}-${lastWeek.getDay}`
+        const end_date = req.query.end_date || yesterdayString //`${today.getFullYear}-${today.getMonth}-${today.getDay}`
+        const newParams = {...params, start_date, end_date}
+        delete newParams.forecast_days
+
+        const newMeta = {...meta,start_date, end_date}
+
+        // https://archive-api.open-meteo.com/v1/archive?latitude=52.52&longitude=13.41&start_date=2023-05-25&end_date=2023-06-10&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&timezone=Europe%2FBerlin&min=2023-05-27&max=2023-06-10
+        
+        try{
+
+            const response = await axios.get('https://archive-api.open-meteo.com/v1/archive?',{params: newParams})
+        
+            const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInverter, inverterEfficiency})
+        
+            res.send({meta: newMeta, values})
+        } catch (e) {
+            console.log(e)
+        }
+        
+
+    }
+
+})
+
+
+app.get('/archive', async (req,res) => {
+
+
+    // https://archive-api.open-meteo.com/v1/archive?latitude=52.52&longitude=13.41&start_date=2023-05-25&end_date=2023-06-10&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&timezone=Europe%2FBerlin&min=2023-05-27&max=2023-06-10
+
+
 })
 
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
