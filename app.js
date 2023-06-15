@@ -8,7 +8,7 @@ const app = express()
 const PORT = process.env.PORT || 5555
 
 
-const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInverter, inverterEfficiency}) => {
+const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency}) => {
 
     const pvVectors = [
         Math.sin(azimuth/180*Math.PI) * Math.cos((90-tilt) / 180 * Math.PI),
@@ -49,7 +49,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
 
         const dcPower = totalRadiationOnCell / 1000 * power * (1 + (cellTemperature - 25) * (cellCoEff/100))
 
-        const acPower = dcPower > powerInverter ? powerInverter * inverterEfficiency : dcPower * inverterEfficiency
+        const acPower = dcPower > powerInvertor ? powerInvertor * invertorEfficiency : dcPower * invertorEfficiency
 
         return {
             datetime: t,
@@ -92,8 +92,8 @@ app.get(['/forecast', '/archive'], async (req,res) => {
     // tilt = parseFloat(tilt)
     const albedo = req.query.albedo || 0.2
     const cellCoEff = req.query.cellCoEff || -0.4
-    const powerInverter = req.query.powerInverter || power
-    const inverterEfficiency = req.query.inverterEfficiency || 1
+    const powerInvertor = req.query.powerInvertor || power
+    const invertorEfficiency = req.query.invertorEfficiency || 1
     const timezone = req.query.timezone || 'Europe/Berlin'
     const forecast_days = req.query.forecast_days || 0
 
@@ -106,26 +106,26 @@ app.get(['/forecast', '/archive'], async (req,res) => {
         timezone,
         albedo,
         forecast_days,
-        inverterEfficiency,
-        powerInverter,
+        invertorEfficiency,
+        powerInvertor,
         cellCoEff
     }
 
-    const params = {
+    const baseParams = {
         latitude: lat,
         longitude: lon,
         hourly: 'temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance',
-        forecast_days:1,
         timezone,
         forecast_days
     }
     
     if (req.path == '/forecast') {
 
+        const params = {...baseParams,forecast_days}
     
         // https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&forecast_days=1
         const response = await axios.get('https://api.open-meteo.com/v1/dwd-icon',{params})
-        const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInverter, inverterEfficiency})
+        const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency})
 
         res.send({meta, values})
     
@@ -140,10 +140,10 @@ app.get(['/forecast', '/archive'], async (req,res) => {
         console.log(yesterdayString, lastWeekString)
 
 
-        const start_date = req.query.start_date || lastWeekString //`${lastWeek.getFullYear}-${lastWeek.getMonth}-${lastWeek.getDay}`
-        const end_date = req.query.end_date || yesterdayString //`${today.getFullYear}-${today.getMonth}-${today.getDay}`
-        const newParams = {...params, start_date, end_date}
-        delete newParams.forecast_days
+        const start_date = req.query.start_date || lastWeekString 
+        const end_date = req.query.end_date || yesterdayString 
+        const params = {...baseParams, start_date, end_date}
+        delete params.forecast_days
 
         const newMeta = {...meta,start_date, end_date}
 
@@ -151,9 +151,9 @@ app.get(['/forecast', '/archive'], async (req,res) => {
         
         try{
 
-            const response = await axios.get('https://archive-api.open-meteo.com/v1/archive?',{params: newParams})
+            const response = await axios.get('https://archive-api.open-meteo.com/v1/archive?',{params})
         
-            const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInverter, inverterEfficiency})
+            const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency})
         
             res.send({meta: newMeta, values})
         } catch (e) {
