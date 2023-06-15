@@ -43,11 +43,11 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         // TODO: Dynamic
         const shortwaveEfficiency = (0.5 - 0.5 * Math.cos(tilt/180 * Math.PI))
 
-        const totalRadiotionOnCell = dniRad * efficiency + diffuseRad * efficiency + shortwaveRad * shortwaveEfficiency * albedo
-        const cellTemperature = calcCellTemperature(temperature, totalRadiotionOnCell)
-        // console.log({dniRad, diffuseRad, shortwaveRad, shortwaveEfficiency, totalRadiotionOnCell, cellTemperature, power, temperature})
+        const totalRadiationOnCell = dniRad * efficiency + diffuseRad * efficiency + shortwaveRad * shortwaveEfficiency * albedo
+        const cellTemperature = calcCellTemperature(temperature, totalRadiationOnCell)
+        // console.log({dniRad, diffuseRad, shortwaveRad, shortwaveEfficiency, totalRadiationOnCell, cellTemperature, power, temperature})
 
-        const dcPower = totalRadiotionOnCell / 1000 * power * (1 + (cellTemperature - 25) * (cellCoEff/100))
+        const dcPower = totalRadiationOnCell / 1000 * power * (1 + (cellTemperature - 25) * (cellCoEff/100))
 
         const acPower = dcPower > powerInverter ? powerInverter * inverterEfficiency : dcPower * inverterEfficiency
 
@@ -56,8 +56,9 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
             dcPower,
             power: acPower,
             cellTemperature,
-            totalRadiotionOnCell,
+            totalRadiationOnCell,
             efficiency,
+            pvVectors,
             sunVectors,
             sunTilt,
             sunAzimuth,
@@ -89,12 +90,14 @@ app.get('/forecast', async (req,res) => {
     const cellCoEff = req.query.cellCoEff || -0.4
     const powerInverter = req.query.powerInverter || power
     const inverterEfficiency = req.query.inverterEfficiency || 1
+    const timezone = req.query.timezone || 'Europe/Berlin'
 
     const params = {
         latitude: lat,
         longitude: lon,
         hourly: 'temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance',
-        forecast_days:1
+        forecast_days:1,
+        timezone 
 
     }
 
