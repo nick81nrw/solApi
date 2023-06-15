@@ -105,10 +105,20 @@ app.get('/forecast', async (req,res) => {
     // const response = await axios.get('https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&forecast_days=1')
     const response = await axios.get('https://api.open-meteo.com/v1/forecast',{params})
 
-    const calculation = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInverter, inverterEfficiency})
+    const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInverter, inverterEfficiency})
     // console.log(response)
 
-    res.send(calculation)
+    const meta = {
+        lat,
+        lon,
+        power,
+        azimuth,
+        tilt,
+        timezone,
+        albedo,
+    }
+
+    res.send({meta, values})
 })
 
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
