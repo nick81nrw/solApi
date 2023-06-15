@@ -215,7 +215,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "2023-05-06T00:00:00.000Z"
+            "example": "2023-05-06"
           },
           {
             "name": "end_date",
@@ -225,7 +225,7 @@
             "schema": {
               "type": "string"
             },
-            "example": "2023-05-10T00:00:00.000Z"
+            "example": "2023-05-10"
           },
           {
             "name": "cellCoEff",
