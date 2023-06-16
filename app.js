@@ -7,6 +7,16 @@ const swaggerDocument = require('./swagger.json')
 const app = express()
 const PORT = process.env.PORT || 5555
 
+const megreArraysUnique = (...all) => {
+    let newArr = []
+    for (const arr of all) {
+        newArr = [...newArr, ...arr]
+    }
+    return newArr.filter( (val, i) => {
+        return newArr.indexOf(val) == i
+    })
+
+}
 
 const getPrices = async ({start, end}) => {
 
@@ -30,7 +40,7 @@ const getPrices = async ({start, end}) => {
     return result
 }
 
-const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency}) => {
+const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData}) => {
 
     const pvVectors = [
         Math.sin(azimuth/180*Math.PI) * Math.cos((90-tilt) / 180 * Math.PI),
@@ -67,33 +77,38 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
 
         const totalRadiationOnCell = dniRad * efficiency + diffuseRad * efficiency + shortwaveRad * shortwaveEfficiency * albedo
         const cellTemperature = calcCellTemperature(temperature, totalRadiationOnCell)
-        // console.log({dniRad, diffuseRad, shortwaveRad, shortwaveEfficiency, totalRadiationOnCell, cellTemperature, power, temperature})
 
         const dcPower = totalRadiationOnCell / 1000 * power * (1 + (cellTemperature - 25) * (cellCoEff/100))
 
         const acPower = dcPower > powerInvertor ? powerInvertor * invertorEfficiency : dcPower * invertorEfficiency
 
-        return {
+        const result = {
             datetime: t,
             dcPower,
             power: acPower,
-            cellTemperature,
-            totalRadiationOnCell,
-            efficiency,
-            pvVectors,
-            sunVectors,
             sunTilt,
             sunAzimuth,
-            dniRad,
-            diffuseRad,
-            shortwaveRad,
             temperature,
         }
+        if (additionalRequestData.length > 0) {
+            additionalRequestData.forEach(elem => {
+                result[elem] = weatherData[elem][idx]
+            })
+        }
+        if (DEBUG) {
+            result.dniRad = dniRad,
+            result.diffuseRad = diffuseRad
+            result.shortwaveRad = shortwaveRad
+            result.cellTemperature = cellTemperature
+            result.totalRadiationOnCell = totalRadiationOnCell
+            result.efficiency = efficiency
+            result.pvVectors = pvVectors
+            result.sunVectors = sunVectors
+        }
+
+        return result
 
     })
-    // console.log(sunCalc.getTimes(new Date(), lat, lon))
-    // console.log(sunrisePos)
-    // console.log(sunrisePos.azimuth * 180 / Math.PI)
     return result
 }
 
@@ -105,17 +120,20 @@ app.get(['/forecast', '/archive'], async (req,res) => {
     
     let {lat, lon, power, azimuth, tilt} = req.query
     if (!lat || !lon || !power || !azimuth || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given'})
+    
+    // TODO: Check input values
     power = parseFloat(power)
-    // lat = parseFloat(lat)
-    // lon = parseFloat(lon)
-    // azimuth = parseFloat(azimuth)
-    // tilt = parseFloat(tilt)
     const albedo = req.query.albedo || 0.2
     const cellCoEff = req.query.cellCoEff || -0.4
     const powerInvertor = req.query.powerInvertor || power
     const invertorEfficiency = req.query.invertorEfficiency || 1
     const timezone = req.query.timezone || 'Europe/Berlin'
     const forecast_days = req.query.forecast_days || 0
+    const DEBUG = !!(req.query.debug || false)
+    const additionalRequestData = req.query.hourly && req.query.hourly.split(',') || []
+
+    
+    const requestData = ['temperature_2m','shortwave_radiation','diffuse_radiation','direct_normal_irradiance']
 
     const meta = {
         lat,
@@ -134,7 +152,7 @@ app.get(['/forecast', '/archive'], async (req,res) => {
     const baseParams = {
         latitude: lat,
         longitude: lon,
-        hourly: 'temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance',
+        hourly: megreArraysUnique(requestData,additionalRequestData).join(','),
         timezone,
         forecast_days
     }
@@ -147,7 +165,7 @@ app.get(['/forecast', '/archive'], async (req,res) => {
     
         // https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&forecast_days=1
         const response = await axios.get('https://api.open-meteo.com/v1/dwd-icon',{params})
-        const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency})
+        const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData})
         
 
         res.send({meta, values})
@@ -162,6 +180,7 @@ app.get(['/forecast', '/archive'], async (req,res) => {
         lastWeekString = `${lastWeek.getFullYear()}-${("0" + (lastWeek.getMonth()+1)).slice(-2)}-${("0" + lastWeek.getDate()).slice(-2)}`
         console.log(yesterdayString, lastWeekString)
 
+        // TODO: Check input values
 
         const start_date = req.query.start_date || lastWeekString 
         const end_date = req.query.end_date || yesterdayString 
@@ -175,8 +194,7 @@ app.get(['/forecast', '/archive'], async (req,res) => {
         try{
 
             const response = await axios.get('https://archive-api.open-meteo.com/v1/archive?',{params})
-        
-            const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency})
+            const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData})
         
             res.send({meta: newMeta, values})
         } catch (e) {
@@ -191,15 +209,22 @@ app.get(['/forecast', '/archive'], async (req,res) => {
 
 app.get('/prices', async (req,res) => {
 
-
-    // https://archive-api.open-meteo.com/v1/archive?latitude=52.52&longitude=13.41&start_date=2023-05-25&end_date=2023-06-10&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&timezone=Europe%2FBerlin&min=2023-05-27&max=2023-06-10
-    
+    // TODO: Check input values
+   
     const start = req.query.start || (new Date().setHours(0,0,0,0))
     const end = req.query.end || (new Date().setHours(24,0,0,0))
 
-    const result = await getPrices({start, end})
+    const values = await getPrices({start, end})
 
-    return res.send(result)
+    const meta = {
+        start_timestamp: start,
+        end_timestamp: end,
+        start: new Date(start),
+        end: new Date(end)
+        
+        }
+
+    return res.send({meta, values})
 
 })
 

@@ -24,8 +24,8 @@
   ],
   "tags": [
     {
-      "name": "forecast",
-      "description": "pv generation forcast",
+      "name": "pv generation calculation",
+      "description": "generate pv generation data from weather forcast or archived data",
       "externalDocs": {
         "description": "Find out more",
         "url": "http://swagger.io"
@@ -36,7 +36,7 @@
     "/forecast": {
       "get": {
         "tags": [
-          "forecast"
+          "pv generation calculation"
         ],
         "summary": "Get forcast data",
         "description": "get pv power from a location ",
@@ -130,7 +130,7 @@
             "example": 4500
           },
           {
-            "name": "inverterEfficiency",
+            "name": "invertorEfficiency",
             "in": "query",
             "description": "inverter efficiency. default: 1 (=100%)",
             "required": false,
@@ -139,14 +139,47 @@
               "format": "float"
             },
             "example": 0.95
+          },
+          {
+            "name": "hourly",
+            "in": "query",
+            "description": "additional hourly data from open-meteo with \",\" splittet values. \nCheck https://open-meteo.com/en/docs/dwd-api",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "relativehumidity_2m,windspeed_10m"
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Forecast"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/Forecast"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid ID supplied"
+          },
+          "404": {
+            "description": "Pet not found"
+          }
+        }
       }
     },
     "/archive": {
       "get": {
         "tags": [
-          "archive"
+          "pv generation calculation"
         ],
         "summary": "Get archive data",
         "description": "get pv power from a location ",
@@ -260,7 +293,7 @@
             "example": 4500
           },
           {
-            "name": "inverterEfficiency",
+            "name": "invertorEfficiency",
             "in": "query",
             "description": "inverter efficiency. default: 1 (=100%)",
             "required": false,
@@ -269,6 +302,16 @@
               "format": "float"
             },
             "example": 0.95
+          },
+          {
+            "name": "hourly",
+            "in": "query",
+            "description": "additional hourly data from open-meteo with \",\" splittet values. \nCheck https://open-meteo.com/en/docs/dwd-api",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "relativehumidity_2m,windspeed_10m"
           }
         ],
         "responses": {
@@ -346,12 +389,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Forecast"
+                  "$ref": "#/components/schemas/Prices"
                 }
               },
               "application/xml": {
                 "schema": {
-                  "$ref": "#/components/schemas/Forecast"
+                  "$ref": "#/components/schemas/Prices"
                 }
               }
             }
@@ -426,6 +469,71 @@
                   "format": "float",
                   "description": "windspeed in m/s",
                   "example": 28.4
+                }
+              }
+            }
+          }
+        }
+      },
+      "Prices": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "start_timestamp": {
+                "type": "number",
+                "example": 1686866400000
+              },
+              "end_timestamp": {
+                "type": "number",
+                "example": 1686952800000
+              },
+              "start": {
+                "type": "string",
+                "example": "2023-06-15T22:00:00.000Z"
+              },
+              "end": {
+                "type": "string",
+                "example": "2023-06-16T22:00:00.000Z"
+              }
+            }
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start_timestamp": {
+                  "type": "number",
+                  "example": 1686866400000
+                },
+                "end_timestamp": {
+                  "type": "number",
+                  "example": 1686952800000
+                },
+                "marketprice": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "EEX price for one MWh",
+                  "example": 126.16
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "Eur/MWh"
+                },
+                "start": {
+                  "type": "string",
+                  "example": "2023-06-15T22:00:00.000Z"
+                },
+                "end": {
+                  "type": "string",
+                  "example": "2023-06-16T22:00:00.000Z"
+                },
+                "marketpriceEurocentPerKWh": {
+                  "type": "number",
+                  "format": "float",
+                  "example": 12.62
                 }
               }
             }
