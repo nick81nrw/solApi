@@ -7,6 +7,8 @@ const swaggerDocument = require('./swagger.json')
 const app = express()
 const PORT = process.env.PORT || 5555
 
+
+
 const megreArraysUnique = (...all) => {
     let newArr = []
     for (const arr of all) {
@@ -25,7 +27,7 @@ const getPrices = async ({start, end}) => {
     
     if (typeof start == 'string' && start.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)((-(\d{2}):(\d{2})|Z)?)$/)) start = (new Date(start))
     if (typeof end == 'string' && end.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)((-(\d{2}):(\d{2})|Z)?)$/)) end = (new Date(end))
-    console.log(start, end)
+
     const params = {start, end}
 
     const response = await axios.get('https://api.awattar.de/v1/marketdata',{params})
@@ -47,7 +49,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         Math.cos(azimuth/180*Math.PI) * Math.cos((90-tilt) / 180 * Math.PI),
         Math.sin((90-tilt) / 180 * Math.PI),
     ]
-    // console.log(pvVectors)
+
     const result = weatherData.time.map((time, idx) => {
         const dniRad = weatherData.direct_normal_irradiance[idx]
         const diffuseRad = weatherData.diffuse_radiation[idx]
@@ -63,7 +65,9 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
             Math.cos(sunAzimuth/180*Math.PI) * Math.cos(sunTilt / 180 * Math.PI),
             Math.sin(sunTilt / 180 * Math.PI),
         ]
+
         let efficiency = 0
+
         sunVectors.forEach((v,i) => {
             efficiency += v * pvVectors[i]
             
@@ -129,13 +133,18 @@ app.get(['/forecast', '/archive'], async (req,res) => {
     const invertorEfficiency = req.query.invertorEfficiency || 1
     const timezone = req.query.timezone || 'Europe/Berlin'
     const forecast_days = req.query.forecast_days || 0
-    const DEBUG = !!(req.query.debug || false)
+    const horizont = req.query.horizont && req.query.horizont.split(',') || null
     const additionalRequestData = req.query.hourly && req.query.hourly.split(',') || []
+    const DEBUG = !!(req.query.debug || false)
 
     
     const requestData = ['temperature_2m','shortwave_radiation','diffuse_radiation','direct_normal_irradiance']
+    let weatherRequestUrl = ''
+    let params = {}
+    let meta = {}
 
-    const meta = {
+
+    const baseMeta = {
         lat,
         lon,
         power,
@@ -154,61 +163,59 @@ app.get(['/forecast', '/archive'], async (req,res) => {
         longitude: lon,
         hourly: megreArraysUnique(requestData,additionalRequestData).join(','),
         timezone,
-        forecast_days
     }
     
 
 
     if (req.path == '/forecast') {
 
-        const params = {...baseParams,forecast_days}
+        params = {...baseParams,forecast_days}
+        meta = {...baseMeta, forecast_days}
+        weatherRequestUrl = 'https://api.open-meteo.com/v1/dwd-icon'
     
         // https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&forecast_days=1
-        const response = await axios.get('https://api.open-meteo.com/v1/dwd-icon',{params})
-        const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData})
         
-
-        res.send({meta, values})
-    
-    
+        
         
     } else if (req.path == '/archive') {
         const yesterday = new Date(new Date() - (1 * 24 * 60 * 60 * 1000))
         const lastWeek = new Date(yesterday - (7 * 24 * 60 *60 * 1000))
-
+        
         yesterdayString = `${yesterday.getFullYear()}-${("0" + (yesterday.getMonth()+1)).slice(-2)}-${("0" + yesterday.getDate()).slice(-2)}`
         lastWeekString = `${lastWeek.getFullYear()}-${("0" + (lastWeek.getMonth()+1)).slice(-2)}-${("0" + lastWeek.getDate()).slice(-2)}`
-        console.log(yesterdayString, lastWeekString)
-
+        
         // TODO: Check input values
-
+        
         const start_date = req.query.start_date || lastWeekString 
         const end_date = req.query.end_date || yesterdayString 
-        const params = {...baseParams, start_date, end_date}
-        delete params.forecast_days
-
-        const newMeta = {...meta,start_date, end_date}
+        
+        meta = {...baseMeta,start_date, end_date}
+        params = {...baseParams, start_date, end_date}
+        
+        weatherRequestUrl = 'https://archive-api.open-meteo.com/v1/archive'
 
         // https://archive-api.open-meteo.com/v1/archive?latitude=52.52&longitude=13.41&start_date=2023-05-25&end_date=2023-06-10&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&timezone=Europe%2FBerlin&min=2023-05-27&max=2023-06-10
         
-        try{
-
-            const response = await axios.get('https://archive-api.open-meteo.com/v1/archive?',{params})
-            const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData})
         
-            res.send({meta: newMeta, values})
-        } catch (e) {
-            console.log(e)
-        }
-        
-
+    } else {
+        res.status(400).send({error:true})
     }
 
+    try {
+        const response = await axios.get(weatherRequestUrl,{params})
+        const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData})
+        res.send({meta, values})
+    } catch(e) {
+        console.log(e)
+        res.status(500).send(e.message)
+    }
+    
+    
 })
 
 
 app.get('/prices', async (req,res) => {
-
+    
     // TODO: Check input values
    
     const start = req.query.start || (new Date().setHours(0,0,0,0))
