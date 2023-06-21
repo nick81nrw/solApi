@@ -50,14 +50,19 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         Math.sin((90-tilt) / 180 * Math.PI),
     ]
 
-    const result = weatherData.time.map((time, idx) => {
-        const dniRad = weatherData.direct_normal_irradiance[idx]
-        const diffuseRad = weatherData.diffuse_radiation[idx]
-        const shortwaveRad = weatherData.shortwave_radiation[idx]
-        const temperature = weatherData.temperature_2m[idx]
+    const dataTimeline = weatherData && weatherData.minutely_15 ? weatherData.minutely_15 :  weatherData.hourly
+
+    if (!dataTimeline) return
+
+    const result = dataTimeline.time.map((time, idx) => {
+        const dniRad = dataTimeline.direct_normal_irradiance[idx]
+        const diffuseRad = dataTimeline.diffuse_radiation[idx]
+        const shortwaveRad = dataTimeline.shortwave_radiation[idx]
+        const temperature = dataTimeline.temperature_2m[idx]
 
         const t = new Date(time)
-        const sunPos = sunCalc.getPosition(t, lat, lon)
+        const sunPosTime = new Date(new Date(t).setMinutes(30)) // mid of hour
+        const sunPos = sunCalc.getPosition(sunPosTime, lat, lon)
         const sunAzimuth = sunPos.azimuth * 180 / Math.PI
         const sunTilt = sunPos.altitude * 180 / Math.PI
         sunVectors = [
@@ -108,6 +113,8 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
             result.efficiency = efficiency
             result.pvVectors = pvVectors
             result.sunVectors = sunVectors
+            result.sunPos = sunPos
+            result.sunPosTime = sunPosTime
         }
 
         return result
@@ -135,14 +142,14 @@ app.get(['/forecast', '/archive'], async (req,res) => {
     const forecast_days = req.query.forecast_days || 0
     const horizont = req.query.horizont && req.query.horizont.split(',') || null
     const additionalRequestData = req.query.hourly && req.query.hourly.split(',') || []
-    const DEBUG = !!(req.query.debug || false)
+    const timeCycle = req.query.timecycle || 'hourly'
+    const DEBUG = !!((req.query.debug ||req.query.DEBUG)  || false)
 
     
     const requestData = ['temperature_2m','shortwave_radiation','diffuse_radiation','direct_normal_irradiance']
     let weatherRequestUrl = ''
     let params = {}
     let meta = {}
-
 
     const baseMeta = {
         lat,
@@ -161,7 +168,9 @@ app.get(['/forecast', '/archive'], async (req,res) => {
     const baseParams = {
         latitude: lat,
         longitude: lon,
-        hourly: megreArraysUnique(requestData,additionalRequestData).join(','),
+        [timeCycle]: megreArraysUnique(requestData,additionalRequestData).join(','),
+        // hourly: megreArraysUnique(requestData,additionalRequestData).join(','),
+        // minutely_15: megreArraysUnique(requestData,additionalRequestData).join(','),
         timezone,
     }
     
@@ -173,6 +182,7 @@ app.get(['/forecast', '/archive'], async (req,res) => {
         meta = {...baseMeta, forecast_days}
         weatherRequestUrl = 'https://api.open-meteo.com/v1/dwd-icon'
     
+        
         // https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&forecast_days=1
         
         
@@ -203,7 +213,7 @@ app.get(['/forecast', '/archive'], async (req,res) => {
 
     try {
         const response = await axios.get(weatherRequestUrl,{params})
-        const values = calculateForcast({lat,lon, weatherData: response.data.hourly, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData})
+        const values = calculateForcast({lat,lon, weatherData: response.data, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData})
         res.send({meta, values})
     } catch(e) {
         console.log(e)
