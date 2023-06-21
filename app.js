@@ -61,7 +61,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         const temperature = dataTimeline.temperature_2m[idx]
 
         const t = new Date(time)
-        const sunPosTime = new Date(new Date(t).setMinutes(30)) // mid of hour
+        const sunPosTime = weatherData.minutely_15 ? new Date(new Date(t).setMinutes(7)) : new Date(new Date(t).setMinutes(30)) // mid of time slot
         const sunPos = sunCalc.getPosition(sunPosTime, lat, lon)
         const sunAzimuth = sunPos.azimuth * 180 / Math.PI
         const sunTilt = sunPos.altitude * 180 / Math.PI
@@ -86,10 +86,11 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
 
         const totalRadiationOnCell = dniRad * efficiency + diffuseRad * efficiency + shortwaveRad * shortwaveEfficiency * albedo
         const cellTemperature = calcCellTemperature(temperature, totalRadiationOnCell)
-
-        const dcPower = totalRadiationOnCell / 1000 * power * (1 + (cellTemperature - 25) * (cellCoEff/100))
-
-        const acPower = dcPower > powerInvertor ? powerInvertor * invertorEfficiency : dcPower * invertorEfficiency
+        
+        const dcPowerComplete = totalRadiationOnCell / 1000 * power * (1 + (cellTemperature - 25) * (cellCoEff/100))
+        const dcPower = weatherData.minutely_15 ? dcPowerComplete /4 : dcPowerComplete
+        const acPowerComplete = dcPowerComplete > powerInvertor ? powerInvertor * invertorEfficiency : dcPowerComplete * invertorEfficiency
+        const acPower = weatherData.minutely_15 ? acPowerComplete /4 : acPowerComplete
 
         const result = {
             datetime: t,
@@ -101,7 +102,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         }
         if (additionalRequestData.length > 0) {
             additionalRequestData.forEach(elem => {
-                result[elem] = weatherData[elem][idx]
+                result[elem] = dataTimeline[elem][idx]
             })
         }
         if (DEBUG) {
@@ -157,7 +158,7 @@ app.get(['/forecast', '/archive'], async (req,res) => {
         power,
         azimuth,
         tilt,
-        timezone,
+        // timezone,
         albedo,
         forecast_days,
         invertorEfficiency,
