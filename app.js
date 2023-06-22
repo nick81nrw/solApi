@@ -52,9 +52,9 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
 
     const dataTimeline = weatherData && weatherData.minutely_15 ? weatherData.minutely_15 :  weatherData.hourly
 
-    if (!dataTimeline) return
+    if (!dataTimeline) return []
 
-    const result = dataTimeline.time.map((time, idx) => {
+    const values = dataTimeline.time.map((time, idx) => {
         const dniRad = dataTimeline.direct_normal_irradiance[idx]
         const diffuseRad = dataTimeline.diffuse_radiation[idx]
         const shortwaveRad = dataTimeline.shortwave_radiation[idx]
@@ -92,7 +92,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         const acPowerComplete = dcPowerComplete > powerInvertor ? powerInvertor * invertorEfficiency : dcPowerComplete * invertorEfficiency
         const acPower = weatherData.minutely_15 ? acPowerComplete /4 : acPowerComplete
 
-        const result = {
+        const calcResult = {
             datetime: t,
             dcPower,
             power: acPower,
@@ -102,26 +102,51 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         }
         if (additionalRequestData.length > 0) {
             additionalRequestData.forEach(elem => {
-                result[elem] = dataTimeline[elem][idx]
+                calcResult[elem] = dataTimeline[elem][idx]
             })
         }
         if (DEBUG) {
-            result.dniRad = dniRad,
-            result.diffuseRad = diffuseRad
-            result.shortwaveRad = shortwaveRad
-            result.cellTemperature = cellTemperature
-            result.totalRadiationOnCell = totalRadiationOnCell
-            result.efficiency = efficiency
-            result.pvVectors = pvVectors
-            result.sunVectors = sunVectors
-            result.sunPos = sunPos
-            result.sunPosTime = sunPosTime
+            calcResult.dniRad = dniRad,
+            calcResult.diffuseRad = diffuseRad
+            calcResult.shortwaveRad = shortwaveRad
+            calcResult.cellTemperature = cellTemperature
+            calcResult.totalRadiationOnCell = totalRadiationOnCell
+            calcResult.efficiency = efficiency
+            calcResult.pvVectors = pvVectors
+            calcResult.sunVectors = sunVectors
+            calcResult.sunPos = sunPos
+            calcResult.sunPosTime = sunPosTime
         }
 
-        return result
+        return calcResult
 
     })
-    return result
+
+    if (weatherData.minutely_15) {
+
+        const summaryObject = values.reduce((prev, curr) => {
+            const key = new Date(new Date(curr.datetime).setMinutes(0)).toISOString()
+            if (!prev[key]) {
+                prev[key] = {
+                    datetime: key,
+                    dcPower: curr.dcPower,
+                    power: curr.power,
+                }
+                return prev
+            }
+            prev[key].dcPower += curr.dcPower
+            prev[key].power += curr.power
+            return prev
+
+        },{})
+        
+        const summary = Object.values(summaryObject)
+
+        return {values, summary}
+
+    }
+
+    return {values}
 }
 
 const calcCellTemperature = (temperature, totalRadiotionOnCell) => {
@@ -215,7 +240,7 @@ app.get(['/forecast', '/archive'], async (req,res) => {
     try {
         const response = await axios.get(weatherRequestUrl,{params})
         const values = calculateForcast({lat,lon, weatherData: response.data, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData})
-        res.send({meta, values})
+        res.send({meta, ...values})
     } catch(e) {
         console.log(e)
         res.status(500).send(e.message)
