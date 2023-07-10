@@ -1,6 +1,4 @@
 const express = require('express')
-const axios = require('axios')
-const sunCalc = require('suncalc')
 const swaggerUi = require('swagger-ui-express')
 const swaggerDocument = require('./swagger.json')
 
