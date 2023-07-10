@@ -1,3 +1,5 @@
+const axios = require('axios')
+const sunCalc = require('suncalc')
 
 const megreArraysUnique = (...all) => {
     let newArr = []
