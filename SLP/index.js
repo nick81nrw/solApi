@@ -8,6 +8,27 @@
  * @return {Object}                         {"20200101:00":{P:20}, "20200101:01":{P:30.5}, ...}
  */
 
+const dayString = day => {
+    switch (day) {
+        case 0:
+            return 'Sunday '
+        case 1:
+            return 'Monday'
+        case 2:
+            return 'Tuesday'
+        case 3:
+            return 'Wednesday'
+        case 4:
+            return 'Thursday'
+        case 5:
+            return 'Friday'
+        case 6:
+            return 'Saturday '
+    
+        default:
+            return 'Unknown'
+    }
+}
 
 const calcProfile = ({year, consumptionYear, profile, profileBase = 1000, factorFunction}) => {
 
@@ -51,11 +72,11 @@ const calcProfile = ({year, consumptionYear, profile, profileBase = 1000, factor
             
             if (factorFunction){                // if function set, use function for "Standardlastprofil BDEW"
 
-                days[timeString] = {power:factorFunction(dayTimer, consumption * consumptionFactor)} 
+                days[timeString] = {power:factorFunction(dayTimer, consumption * consumptionFactor), day: currentDay.getDay(), dayString: dayString(currentDay.getDay())} 
             }
             else {
                 
-                days[timeString] = {power:consumption * consumptionFactor}
+                days[timeString] = {power:consumption * consumptionFactor, day: currentDay.getDay(), dayString: dayString(currentDay.getDay())}
             }
             
         }
@@ -64,7 +85,7 @@ const calcProfile = ({year, consumptionYear, profile, profileBase = 1000, factor
 
     } 
 
-    const values = Object.keys(days).map(key => ({timestamp: key, power: days[key].power}))
+    const values = Object.keys(days).map(key => ({timestamp: key, ...days[key] }))
     return values
 }
 
@@ -78,17 +99,18 @@ const routeCalcProfile = (req, res) => {
     const profile = require('./Profiles/SLP')[slp]
     const {factorFunction} = require('./Profiles/SLP')
     
+    
+    const values = calcProfile({year,consumptionYear,profile,factorFunction})
+    
+    const calculatedConsumption = values.reduce((prev,curr) => prev + curr.power, 0) / 1000
     const meta = {
         year,
         consumptionYear,
-        slp
+        slp,
+        calculatedConsumption
     }
     
-    const values = calcProfile({year,consumptionYear,profile,factorFunction})
     res.send({meta, values})
-
-
-
 }
 
 module.exports = {

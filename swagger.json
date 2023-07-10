@@ -625,6 +625,11 @@
               "slp": {
                 "type": "string",
                 "example": "SLPH0"
+              },
+              "calculatedConsumption": {
+                "type": "number",
+                "format": "float",
+                "example": 3490.552948059377
               }
             }
           },
@@ -641,6 +646,14 @@
                   "type": "number",
                   "format": "float",
                   "example": 200.16398226648312
+                },
+                "day": {
+                  "type": "number",
+                  "example": 1
+                },
+                "dayString": {
+                  "type": "string",
+                  "example": "Monday"
                 }
               }
             }
