@@ -407,6 +407,74 @@
           }
         }
       }
+    },
+    "/defaultloadprofile": {
+      "get": {
+        "tags": [
+          "Default Load Profiles"
+        ],
+        "summary": "Get hourly power consumption from a german \"Standardlastprofil\" calculation",
+        "description": "get price data for a defined range",
+        "operationId": "getDefaultLoadProfile",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "description": "the year which should calculated. default: actual year",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 2023
+          },
+          {
+            "name": "consumption",
+            "in": "query",
+            "description": "power consumption in this year in kilowatthours",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 3500
+          },
+          {
+            "name": "profile",
+            "in": "query",
+            "description": "which load profile shoult be used. Only \"SLPH0\" is implemented",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "SLPH0"
+              ],
+              "example": "SLPH0"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultLoadProfiles"
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultLoadProfiles"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid ID supplied"
+          },
+          "404": {
+            "description": "Pet not found"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -534,6 +602,45 @@
                   "type": "number",
                   "format": "float",
                   "example": 12.62
+                }
+              }
+            }
+          }
+        }
+      },
+      "DefaultLoadProfiles": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "year": {
+                "type": "number",
+                "example": 2023
+              },
+              "end_timestamp": {
+                "type": "number",
+                "example": 3500
+              },
+              "slp": {
+                "type": "string",
+                "example": "SLPH0"
+              }
+            }
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timestamp": {
+                  "type": "string",
+                  "example": "2023-01-01T01:00:00.000Z"
+                },
+                "power": {
+                  "type": "number",
+                  "format": "float",
+                  "example": 200.16398226648312
                 }
               }
             }
