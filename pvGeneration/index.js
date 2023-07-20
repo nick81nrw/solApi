@@ -59,8 +59,9 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         }
         // TODO: Dynamic
         const shortwaveEfficiency = (0.5 - 0.5 * Math.cos(tilt/180 * Math.PI))
+        const diffuseEfficiency = (.5 + .5 * (Math.cos(tilt / 180 * Math.PI)))
 
-        const totalRadiationOnCell = dniRad * efficiency + diffuseRad * efficiency + shortwaveRad * shortwaveEfficiency * albedo
+        const totalRadiationOnCell = dniRad * efficiency + diffuseRad * diffuseEfficiency + shortwaveRad * shortwaveEfficiency * albedo
         const cellTemperature = calcCellTemperature(temperature, totalRadiationOnCell)
         
         const dcPowerComplete = totalRadiationOnCell / 1000 * power * (1 + (cellTemperature - 25) * (cellCoEff/100))
