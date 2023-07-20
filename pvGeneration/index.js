@@ -12,7 +12,7 @@ const megreArraysUnique = (...all) => {
 
 }
 
-const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData}) => {
+const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont}) => {
 
     const pvVectors = [
         Math.sin(azimuth/180*Math.PI) * Math.cos((90-tilt) / 180 * Math.PI),
@@ -87,6 +87,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
             calcResult.sunPos = sunPos
             calcResult.sunPosTime = sunPosTime
         }
+        if (DEBUG && horizont) calcResult.horizont = horizont
 
         return calcResult
 
@@ -123,6 +124,30 @@ const calcCellTemperature = (temperature, totalRadiotionOnCell) => {
     return temperature + 0.0342*totalRadiotionOnCell
 }
 
+const parseHorizont = (horizontString => {
+    //TODO: validate input
+
+    const horizontArr = horizontString.split(',')
+    //TODO: Check length mudolo 360°
+
+    const horizont = horizontArr.map((elem, i, idx) => {
+        const azimuthFrom = ((360 / idx.length) * i)-180
+        const azimuthTo = ((360 / idx.length) * (1+i))-180
+
+        if (typeof elem == 'number') return {horizont:elem, azimuthFrom,azimuthTo}
+        if (elem.includes('t')) {
+            const [horizont, transparency] = elem.split('t')
+            return { horizont: parseFloat(horizont), transparency: parseFloat(transparency), azimuthFrom,azimuthTo}
+        }
+        return {horizont: parseFloat(elem), azimuthFrom,azimuthTo}
+        })
+
+    return horizont
+        
+})
+
+
+
 const routePvGeneration = async (req,res) => {
     
     let {lat, lon, power, azimuth, tilt} = req.query
@@ -136,7 +161,7 @@ const routePvGeneration = async (req,res) => {
     const invertorEfficiency = req.query.invertorEfficiency || 1
     const timezone = req.query.timezone || 'Europe/Berlin'
     const forecast_days = req.query.forecast_days || 0
-    const horizont = req.query.horizont && req.query.horizont.split(',') || null
+    const horizont = req.query.horizont && parseHorizont(req.query.horizont) || null
     const additionalRequestData = req.query.hourly && req.query.hourly.split(',') || []
     const timeCycle = req.query.timecycle || 'hourly'
     const DEBUG = !!((req.query.debug ||req.query.DEBUG)  || false)
@@ -160,6 +185,9 @@ const routePvGeneration = async (req,res) => {
         powerInvertor,
         cellCoEff
     }
+
+    if (req.query.horizont) baseMeta.horizont = req.query.horizont
+
 
     const baseParams = {
         latitude: lat,
@@ -209,7 +237,7 @@ const routePvGeneration = async (req,res) => {
 
     try {
         const response = await axios.get(weatherRequestUrl,{params})
-        const values = calculateForcast({lat,lon, weatherData: response.data, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData})
+        const values = calculateForcast({lat,lon, weatherData: response.data, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont})
         res.send({meta, ...values})
     } catch(e) {
         console.log(e)
