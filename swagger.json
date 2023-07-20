@@ -137,8 +137,17 @@
             "schema": {
               "type": "number",
               "format": "float"
+            }
+          },
+          {
+            "name": "horizont",
+            "in": "query",
+            "description": "horizont to calculate shading\nup to 360 values to describe shading sitiation for your pv. For this, you use can a comma separated string with obsticals hight in angle (-180 = north, -90 = east, 0 = south, 90 = east). Also transparency is optional supported with a \"t\" after angle <br/>\ne.g. <br />\n10,20,10,15 => -180..-90° azimuth + 10° tilt | -90°..0 azimuth + 20° tilt | ... <br/>\n10t30,15t80 =>  -180..0° azimuth + 10° tilt + 30% transparency | 0°..180 azimuth + 15° tilt + 80% transarency <br/>\n10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10 (18 x \"10\") => every 20° azimuth (360/18) with 10° tilt",
+            "required": false,
+            "schema": {
+              "type": "string"
             },
-            "example": 0.95
+            "example": "10,15,20t30,0"
           },
           {
             "name": "hourly",
