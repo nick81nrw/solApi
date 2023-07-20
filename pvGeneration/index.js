@@ -50,7 +50,13 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         efficiency = efficiency <= 0 ? 0 : efficiency
 
         // TODO: Shading
-
+        if (horizont && efficiency > 0) {
+            const horizontVal = horizont.find(h => sunAzimuth > h.azimuthFrom && sunAzimuth < h.azimuthTo)
+            if (!horizontVal) return
+            if (horizontVal.altitude > sunTilt) {
+                efficiency = efficiency * horizontVal.transparency || 0
+            }
+        }
         // TODO: Dynamic
         const shortwaveEfficiency = (0.5 - 0.5 * Math.cos(tilt/180 * Math.PI))
 
@@ -128,18 +134,18 @@ const parseHorizont = (horizontString => {
     //TODO: validate input
 
     const horizontArr = horizontString.split(',')
-    //TODO: Check length mudolo 360°
 
     const horizont = horizontArr.map((elem, i, idx) => {
         const azimuthFrom = ((360 / idx.length) * i)-180
         const azimuthTo = ((360 / idx.length) * (1+i))-180
 
-        if (typeof elem == 'number') return {horizont:elem, azimuthFrom,azimuthTo}
+        if (typeof elem == 'number') return {altitude:elem, azimuthFrom,azimuthTo}
         if (elem.includes('t')) {
-            const [horizont, transparency] = elem.split('t')
-            return { horizont: parseFloat(horizont), transparency: parseFloat(transparency), azimuthFrom,azimuthTo}
+            const [altitude, transparency] = elem.split('t')
+            //TODO: check input 0..1
+            return { altitude: parseFloat(altitude), transparency: parseFloat(transparency), azimuthFrom,azimuthTo}
         }
-        return {horizont: parseFloat(elem), azimuthFrom,azimuthTo}
+        return {altitude: parseFloat(elem), azimuthFrom,azimuthTo}
         })
 
     return horizont
