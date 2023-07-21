@@ -49,9 +49,9 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         })
         efficiency = efficiency <= 0 ? 0 : efficiency
 
-        // TODO: Shading
+        // Shading
         if (horizont && efficiency > 0) {
-            const horizontVal = horizont.find(h => sunAzimuth > h.azimuthFrom && sunAzimuth < h.azimuthTo)
+            const horizontVal = horizont.find(h => sunAzimuth >= h.azimuthFrom && sunAzimuth < h.azimuthTo)
             if (!horizontVal) return
             if (horizontVal.altitude > sunTilt) {
                 efficiency = efficiency * horizontVal.transparency || 0
@@ -200,9 +200,7 @@ const routePvGeneration = async (req,res) => {
         latitude: lat,
         longitude: lon,
         [timeCycle]: megreArraysUnique(requestData,additionalRequestData).join(','),
-        // hourly: megreArraysUnique(requestData,additionalRequestData).join(','),
-        // minutely_15: megreArraysUnique(requestData,additionalRequestData).join(','),
-        timezone,
+        // timezone,
     }
     
 
