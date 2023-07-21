@@ -1,6 +1,8 @@
 const axios = require('axios')
 const sunCalc = require('suncalc')
 
+const validate = require('./validation')
+
 const megreArraysUnique = (...all) => {
     let newArr = []
     for (const arr of all) {
@@ -12,7 +14,7 @@ const megreArraysUnique = (...all) => {
 
 }
 
-const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont}) => {
+const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary}) => {
 
     const pvVectors = [
         Math.sin(azimuth/180*Math.PI) * Math.cos((90-tilt) / 180 * Math.PI),
@@ -157,20 +159,25 @@ const parseHorizont = (horizontString => {
 
 const routePvGeneration = async (req,res) => {
     
-    let {lat, lon, power, azimuth, tilt} = req.query
-    if (!lat || !lon || !power || !azimuth || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given'})
+    const lat = validate.lat(req.query.lat)
+    const lon = validate.lon(req.query.lon)
+    const power = validate.power(req.query.power)
+    const azimuth = validate.azimuth(req.query.azimuth)
+    const tilt = validate.tilt(req.query.tilt)
+    if (!lat || !lon || !power || !azimuth || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given and valid'})
     
     // TODO: Check input values
-    power = parseFloat(power)
-    const albedo = req.query.albedo || 0.2
-    const cellCoEff = req.query.cellCoEff || -0.4
-    const powerInvertor = req.query.powerInvertor || power
+    // power = parseFloat(power)
+    const albedo = validate.albedo(req.query.albedo) || 0.2
+    const cellCoEff = validate.cellCoEff(req.query.cellCoEff) || -0.4
+    const powerInvertor = validate.powerInvertor(req.query.powerInvertor) || power
     const invertorEfficiency = req.query.invertorEfficiency || 1
     const timezone = req.query.timezone || 'Europe/Berlin'
     const forecast_days = req.query.forecast_days || 0
     const horizont = req.query.horizont && parseHorizont(req.query.horizont) || null
     const additionalRequestData = req.query.hourly && req.query.hourly.split(',') || []
     const timeCycle = req.query.timecycle || 'hourly'
+    const summary = validate.summary(req.query.summary) || 'hourly'
     const DEBUG = !!((req.query.debug ||req.query.DEBUG)  || false)
 
     
@@ -242,7 +249,7 @@ const routePvGeneration = async (req,res) => {
 
     try {
         const response = await axios.get(weatherRequestUrl,{params})
-        const values = calculateForcast({lat,lon, weatherData: response.data, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont})
+        const values = calculateForcast({lat,lon, weatherData: response.data, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary})
         res.send({meta, ...values})
     } catch(e) {
         console.log(e)
