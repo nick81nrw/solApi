@@ -49,9 +49,9 @@
             "required": true,
             "schema": {
               "type": "number",
-              "format": "float"
-            },
-            "example": 55.45
+              "format": "float",
+              "example": 55.45
+            }
           },
           {
             "name": "lon",
@@ -60,9 +60,9 @@
             "required": true,
             "schema": {
               "type": "number",
-              "format": "float"
-            },
-            "example": 8.14
+              "format": "float",
+              "example": 8.14
+            }
           },
           {
             "name": "power",
@@ -71,9 +71,9 @@
             "required": true,
             "schema": {
               "type": "number",
-              "format": "float"
-            },
-            "example": 3400
+              "format": "float",
+              "example": 3400
+            }
           },
           {
             "name": "azimuth",
@@ -82,9 +82,9 @@
             "required": true,
             "schema": {
               "type": "number",
-              "format": "float"
-            },
-            "example": -30
+              "format": "float",
+              "example": -30
+            }
           },
           {
             "name": "tilt",
@@ -93,30 +93,57 @@
             "required": true,
             "schema": {
               "type": "number",
-              "format": "float"
-            },
-            "example": 35
+              "format": "float",
+              "example": 35
+            }
+          },
+          {
+            "name": "past_days",
+            "in": "query",
+            "description": "days with calculated data up to 92 Days (3 months) ",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 0,
+              "example": 5
+            }
+          },
+          {
+            "name": "timecycle",
+            "in": "query",
+            "description": "Chenge the used time cycles between 15 minutes and hourly.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hourly",
+                "minutely_15"
+              ],
+              "example": "hourly",
+              "default": "hourly"
+            }
           },
           {
             "name": "cellCoEff",
             "in": "query",
-            "description": "cellcoefficient of your pv modules. It is used for calculate losses with the temperature of the modules. Value in percent. default: -0.4",
+            "description": "cellcoefficient of your pv modules. It is used for calculate losses with the temperature of the modules. Value in percent.",
             "required": false,
             "schema": {
               "type": "number",
-              "format": "float"
-            },
-            "example": -0.36
+              "format": "float",
+              "default": -0.4,
+              "example": -0.36
+            }
           },
           {
             "name": "timezone",
             "in": "query",
-            "description": "timezone. default: Europe/Berlin",
+            "description": "timezone. !!! Not in use. Always UTC will be returned !!!",
             "required": false,
             "schema": {
-              "type": "string"
-            },
-            "example": "Europe/Berlin"
+              "type": "string",
+              "example": "Europe/Berlin"
+            }
           },
           {
             "name": "powerInvertor",
@@ -125,9 +152,9 @@
             "required": false,
             "schema": {
               "type": "number",
-              "format": "float"
-            },
-            "example": 4500
+              "format": "float",
+              "example": 4500
+            }
           },
           {
             "name": "invertorEfficiency",
@@ -136,7 +163,9 @@
             "required": false,
             "schema": {
               "type": "number",
-              "format": "float"
+              "format": "float",
+              "default": 1,
+              "example": 0.95
             }
           },
           {
@@ -145,9 +174,9 @@
             "description": "horizont to calculate shading\nup to 360 values to describe shading sitiation for your pv. For this, you use can a comma separated string with obsticals hight in angle (-180 = north, -90 = east, 0 = south, 90 = east). Also transparency is optional supported with a \"t\" after angle <br/>\ne.g. <br />\n10,20,10,15 => -180..-90° azimuth + 10° tilt | -90°..0 azimuth + 20° tilt | ... <br/>\n10t0.3,15t0.8 =>  -180..0° azimuth + 10° tilt + 30% transparency | 0°..180 azimuth + 15° tilt + 80% transarency <br/>\n10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10 (18 x \"10\") => every 20° azimuth (360/18) with 10° tilt",
             "required": false,
             "schema": {
-              "type": "string"
-            },
-            "example": "10,15,20t30,0"
+              "type": "string",
+              "example": "10,15,20t30,0"
+            }
           },
           {
             "name": "hourly",
@@ -155,9 +184,10 @@
             "description": "additional hourly data from open-meteo with \",\" splittet values. \nCheck https://open-meteo.com/en/docs/dwd-api",
             "required": false,
             "schema": {
-              "type": "string"
-            },
-            "example": "relativehumidity_2m,windspeed_10m"
+              "type": "string",
+              "default": "[None]",
+              "example": "relativehumidity_2m,windspeed_10m"
+            }
           }
         ],
         "responses": {

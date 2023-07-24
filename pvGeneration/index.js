@@ -164,20 +164,22 @@ const routePvGeneration = async (req,res) => {
     const power = validate.power(req.query.power)
     const azimuth = validate.azimuth(req.query.azimuth)
     const tilt = validate.tilt(req.query.tilt)
-    if (!lat || !lon || !power || !azimuth || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given and valid'})
+    const wrongParameters = [{lat},{lon},{power},{azimuth},{tilt}].map(p => Object.values(p)[0] ? false : ({[Object.keys(p)[0]]:req.query[Object.keys(p)[0]]})).filter(p => p !== false)
+    if (!lat || !lon || !power || !azimuth || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given and valid',wrongParameters})
     
-    // TODO: Check input values
-    // power = parseFloat(power)
+    // TODO: Timezone
     const albedo = validate.albedo(req.query.albedo) || 0.2
     const cellCoEff = validate.cellCoEff(req.query.cellCoEff) || -0.4
     const powerInvertor = validate.powerInvertor(req.query.powerInvertor) || power
-    const invertorEfficiency = req.query.invertorEfficiency || 1
+    const invertorEfficiency = validate.invertorEfficiency(req.query.invertorEfficiency) || 1
     const timezone = req.query.timezone || 'Europe/Berlin'
-    const forecast_days = req.query.forecast_days || 0
+    const past_days = validate.past_days(req.query.past_days) || 0
     const horizont = req.query.horizont && parseHorizont(req.query.horizont) || null
     const additionalRequestData = req.query.hourly && req.query.hourly.split(',') || []
-    const timeCycle = req.query.timecycle || 'hourly'
+    const timeCycle = validate.timeCycle(req.query.timecycle) || 'hourly'
     const summary = validate.summary(req.query.summary) || 'hourly'
+    const start_date = past_days > 0 && validate.start_date(req.query.start_date) || false
+    const end_date = past_days > 0 &&  validate.end_date(req.query.end_date) || false
     const DEBUG = !!((req.query.debug ||req.query.DEBUG)  || false)
 
     
@@ -194,13 +196,14 @@ const routePvGeneration = async (req,res) => {
         tilt,
         // timezone,
         albedo,
-        forecast_days,
+        past_days,
         invertorEfficiency,
         powerInvertor,
         cellCoEff
     }
 
-    if (req.query.horizont) baseMeta.horizont = req.query.horizont
+    if (horizont) baseMeta.horizont = horizont
+    if (horizont) baseMeta.horizontString = req.query.horizont
 
 
     const baseParams = {
@@ -214,13 +217,10 @@ const routePvGeneration = async (req,res) => {
 
     if (req.path == '/forecast') {
 
-        params = {...baseParams,forecast_days}
-        meta = {...baseMeta, forecast_days}
+        params = {...baseParams,past_days}
+        meta = {...baseMeta, past_days}
         weatherRequestUrl = 'https://api.open-meteo.com/v1/dwd-icon'
     
-        
-        // https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&forecast_days=1
-        
         
         
     } else if (req.path == '/archive') {
@@ -230,18 +230,14 @@ const routePvGeneration = async (req,res) => {
         yesterdayString = `${yesterday.getFullYear()}-${("0" + (yesterday.getMonth()+1)).slice(-2)}-${("0" + yesterday.getDate()).slice(-2)}`
         lastWeekString = `${lastWeek.getFullYear()}-${("0" + (lastWeek.getMonth()+1)).slice(-2)}-${("0" + lastWeek.getDate()).slice(-2)}`
         
-        // TODO: Check input values
+        const start = start_date ? start_date : lastWeekString
+        const end = end_date ? end_date : yesterdayString
         
-        const start_date = req.query.start_date || lastWeekString 
-        const end_date = req.query.end_date || yesterdayString 
-        
-        meta = {...baseMeta,start_date, end_date}
-        params = {...baseParams, start_date, end_date}
+        meta = {...baseMeta,start_date: start, end_date: end}
+        params = {...baseParams, start_date: start, end_date: end}
         
         weatherRequestUrl = 'https://archive-api.open-meteo.com/v1/archive'
 
-        // https://archive-api.open-meteo.com/v1/archive?latitude=52.52&longitude=13.41&start_date=2023-05-25&end_date=2023-06-10&hourly=temperature_2m,shortwave_radiation,diffuse_radiation,direct_normal_irradiance&timezone=Europe%2FBerlin&min=2023-05-27&max=2023-06-10
-        
         
     } else {
         res.status(400).send({error:true})

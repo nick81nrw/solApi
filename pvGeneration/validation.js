@@ -15,6 +15,11 @@ const toInt = num => {
     }
 }
 
+const isIsoDate = (str) => {
+    if (/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(str)) return true;
+    return false
+  }
+
 module.exports = {
     summary: str => {
         const allowed = ['hourly', 'minutely_15', 'daily']
@@ -52,5 +57,26 @@ module.exports = {
     powerInvertor: value => {
         if (toInt(value) && value >= 0 ) return toInt(value)
         return false
-    }
+    },
+    invertorEfficiency: value => {
+        if (toInt(value) && value >= 0 &&  value <= 1) return toInt(value)
+        return false
+    },
+    past_days: value => {
+        if (toInt(value) && value >= 0 &&  value <= 92) return toInt(value)
+        return false
+    },
+    timeCycle: value => {
+        const allowed = ['hourly', 'minutely_15']
+        if (typeof value == 'string' && allowed.includes(value)) return value
+        return false
+    },
+    start_date: value => {
+        if (value && isIsoDate(value)) return value
+        return false
+    },
+    end_date: value => {
+        if (value && isIsoDate(value)) return value
+        return false
+    },
 }
