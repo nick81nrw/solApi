@@ -111,7 +111,7 @@
           {
             "name": "timecycle",
             "in": "query",
-            "description": "Chenge the used time cycles between 15 minutes and hourly.",
+            "description": "Change the used time cycles between 15 minutes and hourly.",
             "required": false,
             "schema": {
               "type": "string",
@@ -136,9 +136,21 @@
             }
           },
           {
+            "name": "albedo",
+            "in": "query",
+            "description": "albedo value",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "default": 0.2,
+              "example": 0.25
+            }
+          },
+          {
             "name": "timezone",
             "in": "query",
-            "description": "timezone. !!! Not in use. Always UTC will be returned !!!",
+            "description": "timezone. !!! Not in use. UTC will be returned !!!",
             "required": false,
             "schema": {
               "type": "string",
