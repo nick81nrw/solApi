@@ -33,9 +33,10 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         const shortwaveRad = dataTimeline.shortwave_radiation[idx]
         const temperature = dataTimeline.temperature_2m[idx]
 
-        const t = new Date(time)
-        
-        const localTime = new Date(t.getTime() - t.getTimezoneOffset() * 60000)
+        // const t = new Date(time)
+        const t = moment(time).tz(timezone)
+        const localTime = t.toISOString(true).slice(0,-6)
+
         const sunPosTime = weatherData.minutely_15 ? new Date(new Date(t).setMinutes(7)) : new Date(new Date(t).setMinutes(30)) // mid of time slot
         const sunPos = sunCalc.getPosition(sunPosTime, lat, lon)
         const sunAzimuth = sunPos.azimuth * 180 / Math.PI
