@@ -20,6 +20,9 @@
   "servers": [
     {
       "url": "https://api.akkudoktor.net/"
+    },
+    {
+      "url": "http://localhost:5555"
     }
   ],
   "tags": [
@@ -150,7 +153,7 @@
           {
             "name": "timezone",
             "in": "query",
-            "description": "timezone. !!! Not in use. UTC will be returned !!!",
+            "description": "timezone. ",
             "required": false,
             "schema": {
               "type": "string",
