@@ -1,5 +1,6 @@
 const axios = require('axios')
 const sunCalc = require('suncalc')
+const moment = require('moment-timezone')
 
 const validate = require('./validation')
 
@@ -14,7 +15,7 @@ const megreArraysUnique = (...all) => {
 
 }
 
-const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary}) => {
+const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary, timezone}) => {
 
     const pvVectors = [
         Math.sin(azimuth/180*Math.PI) * Math.cos((90-tilt) / 180 * Math.PI),
@@ -33,11 +34,13 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         const temperature = dataTimeline.temperature_2m[idx]
 
         const t = new Date(time)
+        
+        const localTime = new Date(t.getTime() - t.getTimezoneOffset() * 60000)
         const sunPosTime = weatherData.minutely_15 ? new Date(new Date(t).setMinutes(7)) : new Date(new Date(t).setMinutes(30)) // mid of time slot
         const sunPos = sunCalc.getPosition(sunPosTime, lat, lon)
         const sunAzimuth = sunPos.azimuth * 180 / Math.PI
         const sunTilt = sunPos.altitude * 180 / Math.PI
-        sunVectors = [
+        const sunVectors = [
             Math.sin(sunAzimuth/180*Math.PI) * Math.cos(sunTilt / 180 * Math.PI),
             Math.cos(sunAzimuth/180*Math.PI) * Math.cos(sunTilt / 180 * Math.PI),
             Math.sin(sunTilt / 180 * Math.PI),
@@ -72,7 +75,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         const acPower = weatherData.minutely_15 ? acPowerComplete /4 : acPowerComplete
 
         const calcResult = {
-            datetime: t,
+            datetime: localTime,
             dcPower,
             power: acPower,
             sunTilt,
@@ -94,7 +97,8 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
             calcResult.pvVectors = pvVectors
             calcResult.sunVectors = sunVectors
             calcResult.sunPos = sunPos
-            calcResult.sunPosTime = sunPosTime
+            calcResult.sunPosTimeUtc = sunPosTime
+            calcResult.utcTime = t
         }
         if (DEBUG && horizont) calcResult.horizont = horizont
 
@@ -194,7 +198,7 @@ const routePvGeneration = async (req,res) => {
         power,
         azimuth,
         tilt,
-        // timezone,
+        timezone,
         albedo,
         past_days,
         invertorEfficiency,
@@ -210,7 +214,7 @@ const routePvGeneration = async (req,res) => {
         latitude: lat,
         longitude: lon,
         [timeCycle]: megreArraysUnique(requestData,additionalRequestData).join(','),
-        // timezone,
+        timezone,
     }
     
 
@@ -244,8 +248,10 @@ const routePvGeneration = async (req,res) => {
     }
 
     try {
+        console.log(params)
         const response = await axios.get(weatherRequestUrl,{params})
-        const values = calculateForcast({lat,lon, weatherData: response.data, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary})
+        
+        const values = calculateForcast({lat,lon, weatherData: response.data, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary, timezone})
         res.send({meta, ...values})
     } catch(e) {
         console.log(e)
