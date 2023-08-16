@@ -33,7 +33,7 @@ module.exports = {
         return false
     },
     validateFn: function(len, fn, val) {
-        if (!val) return false
+        if (!val || !len) return false
         console.log({val,len})
         if (Array.isArray(val)) {
             if (len == val.length) return val.map(fn)
