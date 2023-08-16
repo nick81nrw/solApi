@@ -2,6 +2,8 @@ const axios = require('axios')
 const sunCalc = require('suncalc')
 const moment = require('moment-timezone')
 
+const {getCache, setCache} = require('../caching')
+
 const validate = require('./validation')
 
 const megreArraysUnique = (...all) => {
@@ -17,99 +19,115 @@ const megreArraysUnique = (...all) => {
 
 const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary, timezone}) => {
 
-    const pvVectors = [
-        Math.sin(azimuth/180*Math.PI) * Math.cos((90-tilt) / 180 * Math.PI),
-        Math.cos(azimuth/180*Math.PI) * Math.cos((90-tilt) / 180 * Math.PI),
-        Math.sin((90-tilt) / 180 * Math.PI),
-    ]
+    power = Array.isArray(power) ? power : [power]
+    
+    const calculations = power.map((powerVal,i) => {
+        const azimuthVal = Array.isArray(azimuth) ? azimuth[i] : azimuth
+        const tiltVal = Array.isArray(tilt) ? tilt[i] : tilt
+        const albedoVal = Array.isArray(albedo) ? albedo[i] : albedo
+        const cellCoEffVal = Array.isArray(cellCoEff) ? cellCoEff[i] : cellCoEff
+        const powerInvertorVal = Array.isArray(powerInvertor) ? powerInvertor[i] : powerInvertor
+        const invertorEfficiencyVal = Array.isArray(invertorEfficiency) ? invertorEfficiency[i] : invertorEfficiency
+        const horizontVal = Array.isArray(horizont) ? horizont[i] : horizont
 
-    const dataTimeline = weatherData && weatherData.minutely_15 ? weatherData.minutely_15 :  weatherData.hourly
-
-    if (!dataTimeline) return []
-
-    const values = dataTimeline.time.map((time, idx) => {
-        const dniRad = dataTimeline.direct_normal_irradiance[idx]
-        const diffuseRad = dataTimeline.diffuse_radiation[idx]
-        const shortwaveRad = dataTimeline.shortwave_radiation[idx]
-        const temperature = dataTimeline.temperature_2m[idx]
-
-        // const t = new Date(time)
-        const t = moment(time).tz(timezone)
-        const localTime = t.toISOString(true).slice(0,-6)
-
-        const sunPosTime = weatherData.minutely_15 ? new Date(new Date(t).setMinutes(7)) : new Date(new Date(t).setMinutes(30)) // mid of time slot
-        const sunPos = sunCalc.getPosition(sunPosTime, lat, lon)
-        const sunAzimuth = sunPos.azimuth * 180 / Math.PI
-        const sunTilt = sunPos.altitude * 180 / Math.PI
-        const sunVectors = [
-            Math.sin(sunAzimuth/180*Math.PI) * Math.cos(sunTilt / 180 * Math.PI),
-            Math.cos(sunAzimuth/180*Math.PI) * Math.cos(sunTilt / 180 * Math.PI),
-            Math.sin(sunTilt / 180 * Math.PI),
+        const pvVectors = [
+            Math.sin(azimuthVal/180*Math.PI) * Math.cos((90-tiltVal) / 180 * Math.PI),
+            Math.cos(azimuthVal/180*Math.PI) * Math.cos((90-tiltVal) / 180 * Math.PI),
+            Math.sin((90-tiltVal) / 180 * Math.PI),
         ]
-
-        let efficiency = 0
-
-        sunVectors.forEach((v,i) => {
-            efficiency += v * pvVectors[i]
-            
-        })
-        efficiency = efficiency <= 0 ? 0 : efficiency
-
-        // Shading
-        if (horizont && efficiency > 0) {
-            const horizontVal = horizont.find(h => sunAzimuth >= h.azimuthFrom && sunAzimuth < h.azimuthTo)
-            if (!horizontVal) return
-            if (horizontVal.altitude > sunTilt) {
-                efficiency = efficiency * horizontVal.transparency || 0
-            }
-        }
-        // TODO: Dynamic
-        const shortwaveEfficiency = (0.5 - 0.5 * Math.cos(tilt / 180 * Math.PI))
-        const diffuseEfficiency =   (0.5 + 0.5 * Math.cos(tilt / 180 * Math.PI))
-
-        const totalRadiationOnCell = dniRad * efficiency + diffuseRad * diffuseEfficiency + shortwaveRad * shortwaveEfficiency * albedo
-        const cellTemperature = calcCellTemperature(temperature, totalRadiationOnCell)
-        
-        const dcPowerComplete = totalRadiationOnCell / 1000 * power * (1 + (cellTemperature - 25) * (cellCoEff/100))
-        const dcPower = weatherData.minutely_15 ? dcPowerComplete /4 : dcPowerComplete
-        const acPowerComplete = dcPowerComplete > powerInvertor ? powerInvertor * invertorEfficiency : dcPowerComplete * invertorEfficiency
-        const acPower = weatherData.minutely_15 ? acPowerComplete /4 : acPowerComplete
-
-        const calcResult = {
-            datetime: localTime,
-            dcPower,
-            power: acPower,
-            sunTilt,
-            sunAzimuth,
-            temperature,
-        }
-        if (additionalRequestData.length > 0) {
-            additionalRequestData.forEach(elem => {
-                calcResult[elem] = dataTimeline[elem][idx]
+    
+        const dataTimeline = weatherData && weatherData.minutely_15 ? weatherData.minutely_15 :  weatherData.hourly
+    
+        if (!dataTimeline) return []
+    
+        const values = dataTimeline.time.map((time, idx) => {
+            const dniRad = dataTimeline.direct_normal_irradiance[idx]
+            const diffuseRad = dataTimeline.diffuse_radiation[idx]
+            const shortwaveRad = dataTimeline.shortwave_radiation[idx]
+            const temperature = dataTimeline.temperature_2m[idx]
+    
+            // const t = new Date(time)
+            const t = moment(time).tz(timezone)
+            const localTime = t.toISOString(true).slice(0,-6)
+    
+            const sunPosTime = weatherData.minutely_15 ? new Date(new Date(t).setMinutes(7)) : new Date(new Date(t).setMinutes(30)) // mid of time slot
+            const sunPos = sunCalc.getPosition(sunPosTime, lat, lon)
+            const sunAzimuth = sunPos.azimuth * 180 / Math.PI
+            const sunTilt = sunPos.altitude * 180 / Math.PI
+            const sunVectors = [
+                Math.sin(sunAzimuth/180*Math.PI) * Math.cos(sunTilt / 180 * Math.PI),
+                Math.cos(sunAzimuth/180*Math.PI) * Math.cos(sunTilt / 180 * Math.PI),
+                Math.sin(sunTilt / 180 * Math.PI),
+            ]
+    
+            let efficiency = 0
+    
+            sunVectors.forEach((v,i) => {
+                efficiency += v * pvVectors[i]
+                
             })
-        }
-        if (DEBUG) {
-            calcResult.dniRad = dniRad,
-            calcResult.diffuseRad = diffuseRad
-            calcResult.shortwaveRad = shortwaveRad
-            calcResult.cellTemperature = cellTemperature
-            calcResult.totalRadiationOnCell = totalRadiationOnCell
-            calcResult.efficiency = efficiency
-            calcResult.pvVectors = pvVectors
-            calcResult.sunVectors = sunVectors
-            calcResult.sunPos = sunPos
-            calcResult.sunPosTimeUtc = sunPosTime
-            calcResult.utcTime = t
-        }
-        if (DEBUG && horizont) calcResult.horizont = horizont
+            efficiency = efficiency <= 0 ? 0 : efficiency
+    
+            // Shading
+            if (horizontVal && efficiency > 0) {
+                const horizontValues = horizontVal.find(h => sunAzimuth >= h.azimuthFrom && sunAzimuth < h.azimuthTo)
+                if (!horizontValues) return
+                if (horizontValues.altitude > sunTilt) {
+                    efficiency = efficiency * horizontValues.transparency || 0
+                }
+            }
+            // TODO: Dynamic
+            const shortwaveEfficiency = (0.5 - 0.5 * Math.cos(tiltVal / 180 * Math.PI))
+            const diffuseEfficiency =   (0.5 + 0.5 * Math.cos(tiltVal / 180 * Math.PI))
+    
+            const totalRadiationOnCell = dniRad * efficiency + diffuseRad * diffuseEfficiency + shortwaveRad * shortwaveEfficiency * albedoVal
+            const cellTemperature = calcCellTemperature(temperature, totalRadiationOnCell)
+            
+            const dcPowerComplete = totalRadiationOnCell / 1000 * powerVal * (1 + (cellTemperature - 25) * (cellCoEffVal/100))
+            const dcPower = weatherData.minutely_15 ? dcPowerComplete /4 : dcPowerComplete
+            const acPowerComplete = dcPowerComplete > powerInvertorVal ? powerInvertorVal * invertorEfficiencyVal : dcPowerComplete * invertorEfficiencyVal
+            const acPower = weatherData.minutely_15 ? acPowerComplete /4 : acPowerComplete
+    
+            const calcResult = {
+                datetime: localTime,
+                dcPower,
+                power: acPower,
+                sunTilt,
+                sunAzimuth,
+                temperature,
+            }
+            if (additionalRequestData.length > 0) {
+                additionalRequestData.forEach(elem => {
+                    calcResult[elem] = dataTimeline[elem][idx]
+                })
+            }
+            if (DEBUG) {
+                calcResult.dniRad = dniRad,
+                calcResult.diffuseRad = diffuseRad
+                calcResult.shortwaveRad = shortwaveRad
+                calcResult.cellTemperature = cellTemperature
+                calcResult.totalRadiationOnCell = totalRadiationOnCell
+                calcResult.efficiency = efficiency
+                calcResult.pvVectors = pvVectors
+                calcResult.sunVectors = sunVectors
+                calcResult.sunPos = sunPos
+                calcResult.sunPosTimeUtc = sunPosTime
+                calcResult.utcTime = t
+            }
+            if (DEBUG && horizont) calcResult.horizont = horizontVal
+    
+            return calcResult
 
-        return calcResult
+
+        })
+        return values
+
 
     })
 
     if (weatherData.minutely_15) {
 
-        const summaryObject = values.reduce((prev, curr) => {
+        const summaryObject = calculations.map(values => values.reduce((prev, curr) => {
             const key = new Date(new Date(curr.datetime).setMinutes(0)).toISOString()
             if (!prev[key]) {
                 prev[key] = {
@@ -123,42 +141,43 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
             prev[key].power += curr.power
             return prev
 
-        },{})
+        },{}))
         
         const summary = Object.values(summaryObject)
 
-        return {values, summary}
+        
+        return {values:calculations.length == 1 ? calculations[0]:calculations, summary}
 
     }
 
-    return {values}
+    return {values:calculations.length == 1 ? calculations[0]:calculations}
 }
 
 const calcCellTemperature = (temperature, totalRadiotionOnCell) => {
     return temperature + 0.0342*totalRadiotionOnCell
 }
 
-const parseHorizont = (horizontString => {
-    //TODO: validate input
+// const parseHorizont = (horizontString => {
+//     //TODO: validate input
 
-    const horizontArr = horizontString.split(',')
+//     const horizontArr = horizontString.split(',')
 
-    const horizont = horizontArr.map((elem, i, idx) => {
-        const azimuthFrom = ((360 / idx.length) * i)-180
-        const azimuthTo = ((360 / idx.length) * (1+i))-180
+//     const horizont = horizontArr.map((elem, i, idx) => {
+//         const azimuthFrom = ((360 / idx.length) * i)-180
+//         const azimuthTo = ((360 / idx.length) * (1+i))-180
 
-        if (typeof elem == 'number') return {altitude:elem, azimuthFrom,azimuthTo}
-        if (elem.includes('t')) {
-            const [altitude, transparency] = elem.split('t')
-            //TODO: check input 0..1
-            return { altitude: parseFloat(altitude), transparency: parseFloat(transparency), azimuthFrom,azimuthTo}
-        }
-        return {altitude: parseFloat(elem), azimuthFrom,azimuthTo}
-        })
+//         if (typeof elem == 'number') return {altitude:elem, azimuthFrom,azimuthTo}
+//         if (elem.includes('t')) {
+//             const [altitude, transparency] = elem.split('t')
+//             //TODO: check input 0..1
+//             return { altitude: parseFloat(altitude), transparency: parseFloat(transparency), azimuthFrom,azimuthTo}
+//         }
+//         return {altitude: parseFloat(elem), azimuthFrom,azimuthTo}
+//         })
 
-    return horizont
+//     return horizont
         
-})
+// })
 
 
 
@@ -166,20 +185,21 @@ const routePvGeneration = async (req,res) => {
     
     const lat = validate.lat(req.query.lat)
     const lon = validate.lon(req.query.lon)
-    const power = validate.power(req.query.power)
-    const azimuth = validate.azimuth(req.query.azimuth)
-    const tilt = validate.tilt(req.query.tilt)
+    const {power, azimuth, tilt, roofsLen} = validate.powerAzimuthTilt(req.query.power, req.query.azimuth, req.query.tilt)
+    // const power = validate.power(req.query.power)
+    // const azimuth = validate.azimuth(req.query.azimuth)
+    // const tilt = validate.tilt(req.query.tilt)
     const wrongParameters = [{lat},{lon},{power},{azimuth},{tilt}].map(p => Object.values(p)[0] ? false : ({[Object.keys(p)[0]]:req.query[Object.keys(p)[0]]})).filter(p => p !== false)
-    if (!lat || !lon || !power || !azimuth || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given and valid',wrongParameters})
+    if (!lat || !lon || !power || !azimuth || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given and valid and azimuth, tilt and power must be the same type (number or array) and the same length if type is array. ',wrongParameters})
     
     // TODO: Timezone
-    const albedo = validate.albedo(req.query.albedo) || 0.2
-    const cellCoEff = validate.cellCoEff(req.query.cellCoEff) || -0.4
-    const powerInvertor = validate.powerInvertor(req.query.powerInvertor) || power
-    const invertorEfficiency = validate.invertorEfficiency(req.query.invertorEfficiency) || 1
+    const albedo = validate.validateFn(roofsLen, validate.albedo, req.query.albedo) || 0.2
+    const cellCoEff = validate.validateFn(roofsLen, validate.cellCoEff, req.query.cellCoEff) || -0.4
+    const powerInvertor = validate.validateFn(roofsLen, validate.powerInvertor, req.query.powerInvertor) || power
+    const invertorEfficiency = validate.validateFn(roofsLen, validate.invertorEfficiency, req.query.invertorEfficiency) || 1
     const timezone = req.query.timezone || 'Europe/Berlin'
     const past_days = validate.past_days(req.query.past_days) || 0
-    const horizont = req.query.horizont && parseHorizont(req.query.horizont) || null
+    const horizont = validate.validateFn(roofsLen, validate.parseHorizont, req.query.horizont) || null
     const additionalRequestData = req.query.hourly && req.query.hourly.split(',') || []
     const timeCycle = validate.timeCycle(req.query.timecycle) || 'hourly'
     const summary = validate.summary(req.query.summary) || 'hourly'
@@ -187,7 +207,15 @@ const routePvGeneration = async (req,res) => {
     const end_date = past_days > 0 &&  validate.end_date(req.query.end_date) || false
     const DEBUG = !!((req.query.debug ||req.query.DEBUG)  || false)
 
+    const cacheKey = {lat,lon,power, azimuth, tilt,albedo,cellCoEff,powerInvertor,invertorEfficiency,
+        timezone,past_days,horizont,additionalRequestData,timeCycle,summary,start_date,end_date,DEBUG}
+
+    const cached = await getCache(cacheKey)
     
+    if (cached) {
+        return res.send(cached)
+    }
+
     const requestData = ['temperature_2m','shortwave_radiation','diffuse_radiation','direct_normal_irradiance']
     let weatherRequestUrl = ''
     let params = {}
@@ -250,9 +278,14 @@ const routePvGeneration = async (req,res) => {
 
     try {
         console.log(params)
-        const response = await axios.get(weatherRequestUrl,{params})
+        const weatherCached = await getCache({weatherRequestUrl,params})
+        const response = weatherCached ? weatherCached : await axios.get(weatherRequestUrl,{params})
         
+        await setCache({weatherRequestUrl,params}, response)
+
         const values = calculateForcast({lat,lon, weatherData: response.data, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary, timezone})
+        
+        await setCache(cacheKey, {meta, ...values})
         res.send({meta, ...values})
     } catch(e) {
         console.log(e)
