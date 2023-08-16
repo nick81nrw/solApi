@@ -23,7 +23,7 @@ const getCache = async key => {
 
 const setCache = async (key,data,options={}) => {
     const hashKey = crypto.createHash('sha256').update(JSON.stringify(key)).digest('hex')
-    const expire = options.expire || 10
+    const expire = options.expire || 60*10
 
     if (DEV) {
         const ex = new Date(new Date().getTime() + (expire * 1000))
