@@ -10,6 +10,7 @@ const getCache = async key => {
     if (DEV) {
         const now = new Date()
         if (devCache[hashKey] && devCache[hashKey].expire > now){
+            console.log('cached data', hashKey)
             return devCache[hashKey].data
         } else if (devCache[hashKey]){
             delete devCache[hashKey]
