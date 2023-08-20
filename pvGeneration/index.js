@@ -143,7 +143,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
 
         },{}))
         
-        const summary = Object.values(summaryObject)
+        const summary = summaryObject.length == 1 ? Object.values(summaryObject[0]) : summaryObject.map(s => Object.values(s))
 
         
         return {values:calculations.length == 1 ? calculations[0]:calculations, summary}
