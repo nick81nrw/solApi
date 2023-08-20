@@ -34,7 +34,6 @@ module.exports = {
     },
     validateFn: function(len, fn, val) {
         if (!val || !len) return false
-        console.log({val,len})
         if (Array.isArray(val)) {
             if (len == val.length) return val.map(fn)
         } else {
@@ -61,7 +60,7 @@ module.exports = {
             power: Array.isArray(power) ? checkArray(power, this.power) : this.power(power),
             azimuth: Array.isArray(azimuth) ? checkArray(azimuth, this.azimuth) : this.azimuth(azimuth),
             tilt: Array.isArray(tilt) ? checkArray(tilt, this.tilt) : this.tilt(tilt),
-            roofsLen: Array.isArray(power) ? power.length : false
+            roofsLen: Array.isArray(power) ? power.length : 1
         }
         
     },

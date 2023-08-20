@@ -28,7 +28,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         const cellCoEffVal = Array.isArray(cellCoEff) ? cellCoEff[i] : cellCoEff
         const powerInvertorVal = Array.isArray(powerInvertor) ? powerInvertor[i] : powerInvertor
         const invertorEfficiencyVal = Array.isArray(invertorEfficiency) ? invertorEfficiency[i] : invertorEfficiency
-        const horizontVal = Array.isArray(horizont) ? horizont[i] : horizont
+        const horizontVal = Array.isArray(Array.isArray(horizont))  ? horizont[i] : horizont
 
         const pvVectors = [
             Math.sin(azimuthVal/180*Math.PI) * Math.cos((90-tiltVal) / 180 * Math.PI),
@@ -200,6 +200,7 @@ const routePvGeneration = async (req,res) => {
     const timezone = req.query.timezone || 'Europe/Berlin'
     const past_days = validate.past_days(req.query.past_days) || 0
     const horizont = validate.validateFn(roofsLen, validate.parseHorizont, req.query.horizont) || null
+    console.log(horizont)
     const additionalRequestData = req.query.hourly && req.query.hourly.split(',') || []
     const timeCycle = validate.timeCycle(req.query.timecycle) || 'hourly'
     const summary = validate.summary(req.query.summary) || 'hourly'
