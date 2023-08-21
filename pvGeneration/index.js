@@ -190,7 +190,7 @@ const routePvGeneration = async (req,res) => {
     // const azimuth = validate.azimuth(req.query.azimuth)
     // const tilt = validate.tilt(req.query.tilt)
     const wrongParameters = [{lat},{lon},{power},{azimuth},{tilt}].map(p => Object.values(p)[0] ? false : ({[Object.keys(p)[0]]:req.query[Object.keys(p)[0]]})).filter(p => p !== false)
-    if (!lat || !lon || !power || !azimuth || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given and valid and azimuth, tilt and power must be the same type (number or array) and the same length if type is array. ',wrongParameters})
+    if (!lat || !lon || !power || !azimuth  || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given and valid and azimuth, tilt and power must be the same type (number or array) and the same length if type is array. ',wrongParameters})
     
     // TODO: Timezone
     const albedo = validate.validateFn(roofsLen, validate.albedo, req.query.albedo) || 0.2
