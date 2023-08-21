@@ -28,7 +28,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         const cellCoEffVal = Array.isArray(cellCoEff) ? cellCoEff[i] : cellCoEff
         const powerInvertorVal = Array.isArray(powerInvertor) ? powerInvertor[i] : powerInvertor
         const invertorEfficiencyVal = Array.isArray(invertorEfficiency) ? invertorEfficiency[i] : invertorEfficiency
-        const horizontVal = Array.isArray(Array.isArray(horizont))  ? horizont[i] : horizont
+        const horizontVal = Array.isArray(horizont) && Array.isArray(horizont[0])  ? horizont[i] : horizont
 
         const pvVectors = [
             Math.sin(azimuthVal/180*Math.PI) * Math.cos((90-tiltVal) / 180 * Math.PI),
@@ -57,7 +57,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
             const sunVectors = [
                 Math.sin(sunAzimuth/180*Math.PI) * Math.cos(sunTilt / 180 * Math.PI),
                 Math.cos(sunAzimuth/180*Math.PI) * Math.cos(sunTilt / 180 * Math.PI),
-                Math.sin(sunTilt / 180 * Math.PI),
+                Math.sin(sunTilt /  180*Math.PI),
             ]
     
             let efficiency = 0
@@ -127,7 +127,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
 
     if (weatherData.minutely_15) {
 
-        const summaryObject = calculations.map(values => values.reduce((prev, curr) => {
+        const summaryObject = calculations.map(values => values.reduce((prev, curr,i) => {
             const key = new Date(new Date(curr.datetime).setMinutes(0)).toISOString()
             if (!prev[key]) {
                 prev[key] = {
@@ -200,7 +200,6 @@ const routePvGeneration = async (req,res) => {
     const timezone = req.query.timezone || 'Europe/Berlin'
     const past_days = validate.past_days(req.query.past_days) || 0
     const horizont = validate.validateFn(roofsLen, validate.parseHorizont, req.query.horizont) || null
-    console.log(horizont)
     const additionalRequestData = req.query.hourly && req.query.hourly.split(',') || []
     const timeCycle = validate.timeCycle(req.query.timecycle) || 'hourly'
     const summary = validate.summary(req.query.summary) || 'hourly'
