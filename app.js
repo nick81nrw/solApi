@@ -1,4 +1,5 @@
 const express = require('express')
+const sessions = require('express-session')
 const swaggerUi = require('swagger-ui-express')
 const swaggerDocument = require('./swagger.json')
 
@@ -10,18 +11,25 @@ const {routeGetPrices} = require('./prices')
 const {routePvGeneration} = require('./pvGeneration')
 const {routeCalcProfile} = require('./SLP')
 const { getAcoountPage, getLoginPage, login, createAccount, getUserByApiKey } = require('./controller/userController')
+const { oauthCallback } = require('./controller/oauthController')
 
 app.set('view engine', 'ejs')
 
 app.use(express.json())
 app.use(express.urlencoded({extended:false}))
 
+app.use(sessions({
+    secret: process.env.SESSION_SECRET || [...Array(30)].map(x => Math.floor(Math.random()*10)).join(''),
+    cookie: {maxAge:1000*60*60*24},
+    resave: false,
+    saveUninitialized: true
+}))
+
 app.use(async (req,res,next)=> {
     const apikey = req.query.apikey || req.header("x-api-key")
     if (apikey) {
         const user = await getUserByApiKey(apikey)
         if (user) {
-            req.user = user
             req.accountType = user.accountType
             // req.usageToday = setUsage({user, querystring:req.query})
         } else {
@@ -36,7 +44,7 @@ app.use(async (req,res,next)=> {
 
 // check rights in route as middleware... app.get('/prices', rights('paid'), routeGetPrices)
 const rights = types => (req,res,next) => {
-    const rightsOrder = ['anonymous', 'free', 'paid', 'admin']
+    const rightsOrder = ['anonymous', 'free', 'community', 'paid', 'admin']
     const checkRights = Array.isArray(types) ? types : [types]
     if (checkRights.indexOf(req.accountType) >= 0) return next()
     const minRequiredRights = checkRights.reduce((acc,curr) => rightsOrder.indexOf(curr) > acc ? curr : acc ,-1)
@@ -49,6 +57,7 @@ app.get('/prices', routeGetPrices)
 app.get('/defaultloadprofile', routeCalcProfile)
 
 app.post('/account',createAccount)
+app.get('/account/callback', oauthCallback)
 app.get('/account/', getAcoountPage)
 app.get('/login/', getLoginPage)
 app.post('/login/',login)

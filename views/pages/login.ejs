@@ -17,5 +17,12 @@
         <input type="password" name="password">
         <input type="submit" value="Login">
     </form>
+    <% if (locals.oauth) {%>
+        <% oauth.forEach(function(issuer) { %>
+            <li>
+                <a href="<%= issuer.authUrl %>">Login mit <%= issuer.issuer %></a>
+            </li>
+        <% }) %>
+    <% } %>
 </body>
 </html>

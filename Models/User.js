@@ -1,6 +1,11 @@
 
 const mongoose = require('mongoose')
 
+const oauthSchema = mongoose.Schema({
+    issuer: String,
+    token_type: String,
+    access_token: String,
+})
 
 const userSchema = mongoose.Schema({
     username: String,
@@ -9,7 +14,8 @@ const userSchema = mongoose.Schema({
     created: {type: Date, default: Date.now()},
     accountType: {type: String, default: 'free'},
     active: {type: Boolean, default: true},
-    passwortHash: String
+    passwortHash: String,
+    oauth: [oauthSchema]
 })
 
 const User = mongoose.model('User', userSchema)
