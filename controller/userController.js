@@ -70,6 +70,12 @@ const getLoginPage = (req,res) => {
     res.render('pages/login',{oauth})
 }
 
+const logout = (req,res) => {
+    if(req.session) {
+        req.session.destroy()
+    } 
+    return res.redirect('/login')
+}
 
 const login =  async (req,res) => {
     const {email, password} = req.body
@@ -133,6 +139,7 @@ module.exports = {
     getAcoountPage,
     getLoginPage,
     login,
+    logout,
     createAccount
 
 }
