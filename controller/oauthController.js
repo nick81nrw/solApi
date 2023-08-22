@@ -27,7 +27,6 @@ const oauthCallback = async (req,res) => {
     if (!issuer) return res.render('pages/login', {error:'no oauth issuer found ' + oauthIssuer})
 
     // TODO: Validation
-    console.log(req.query)
     const params = querystring.encode(issuer.createTokenrequestParams(code))
 
     const tokenResponse = await axios.post(issuer.tokenEndpoint, params)
@@ -43,13 +42,13 @@ const oauthCallback = async (req,res) => {
     const profileResponse = await axios(issuer.userinfoEndpoint,requestConfig)
     //TODO: Errorhandling
 
-    console.log(profileResponse.data)
     const {username, email} = profileResponse.data
 
     const user = await getOrCreateOauthUser({username, email, access_token, token_type, oauthIssuer})
+    if (!user) return res.redirect('/account')
+
     
     req.session.user = user
-
     res.redirect('/account')
     
 

@@ -19,10 +19,11 @@
     </form>
     <% if (locals.oauth) {%>
         <% oauth.forEach(function(issuer) { %>
-            <li>
-                <a href="<%= issuer.authUrl %>">Login mit <%= issuer.issuer %></a>
-            </li>
+            <p>
+                <a href="<%= issuer.authUrl %>">Nutze deinen <%= issuer.issuer %> Account</a>
+            </p>
         <% }) %>
     <% } %>
+    <p><a href="/account">Oder erstelle einen neuen Account</a></p>
 </body>
 </html>
