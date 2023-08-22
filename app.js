@@ -26,6 +26,7 @@ app.use(sessions({
 }))
 
 app.use(async (req,res,next)=> {
+    console.log(req.session)
     const apikey = req.query.apikey || req.header("x-api-key")
     if (apikey) {
         const user = await getUserByApiKey(apikey)
