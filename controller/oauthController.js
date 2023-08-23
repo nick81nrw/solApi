@@ -4,21 +4,6 @@ const { getOrCreateOauthUser } = require("./userController")
 
 const oauthIssuers = require('../oauthIssuers')
 
-// const clientId = 'neMdQxiSLkQofexYYWkUiGJnJSgCKQHr'
-// const clientSecret = 'ukoVgMUuVEFlZeCayiAVlbNTRiOotodh'
-
-// const redirectUrl = 'https://api.akkudoktor.net/account/callback'
-
-// const authEndpoint = 'https://www.akkudoktor.net/wp-json/moserver/authorize'
-// const tokenEndpoint = 'https://www.akkudoktor.net/wp-json/moserver/token'
-// const userinfoEndpoint = 'https://www.akkudoktor.net/wp-json/moserver/resource'
-// const scope = 'openid profile email'
-
-// const authUrl = 'https://www.akkudoktor.net/wp-json/moserver/authorize?response_type=code&client_id=neMdQxiSLkQofexYYWkUiGJnJSgCKQHr&redirect_uri=https://api.akkudoktor.net/account/callback&scope=openid%20profile%20email&state=abcde'
-// const response = 'https://api.akkudoktor.net/account/callback?code=c72d65097ab917ec5f8adf565fcf583f29d3e068&state=abcde'
-
-// const tokenRequestPost = tokenEndpoint + `grant_type=authorization_code&code=c72d65097ab917ec5f8adf565fcf583f29d3e068&client_id=<client_id>&${clientId}client_secret=${clientSecret}&redirect_uri=${redirectUrl}`
-
 const oauthCallback = async (req,res) => {
     const {code, state} = req.query
 

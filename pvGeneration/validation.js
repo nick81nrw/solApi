@@ -89,7 +89,6 @@ module.exports = {
         return false
     },
     cellCoEff: value => {
-        console.log(value)
         if (toFloat(value) && value >= -1 && value <= 0) return toFloat(value)
         return false
     },

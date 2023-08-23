@@ -1,3 +1,5 @@
+const {getCache, setCache} = require('../caching')
+
 /**
  * Calculate an consumptionProfile per hour from a profile definition
  * @param  {[Objects]} profile              Loadprofile Array [{till: "03/21",profileDays:{weekdays:{0:50,1:45, ... 23:55},sat:{0:44 ... 23:44},sun:{0:44 ... 23:44},}},{till:...}]
@@ -90,11 +92,15 @@ const calcProfile = ({year, consumptionYear, profile, profileBase = 1000, factor
 }
 
 
-const routeCalcProfile = (req, res) => {
+const routeCalcProfile = async (req, res) => {
 
     const year = parseInt(req.query.year || new Date().getFullYear())
     const consumptionYear = parseInt(req.query.consumption || 0)
     const slp = 'SLPH0' // TODO: Adding more load profiles
+
+    const cachedRequest = await getCache({year,consumptionYear,slp}, {prefix: 'calcprofile-'})
+    
+    if (cachedRequest) return res.send(cachedRequest)
 
     const profile = require('./Profiles/SLP')[slp]
     const {factorFunction} = require('./Profiles/SLP')
@@ -109,6 +115,8 @@ const routeCalcProfile = (req, res) => {
         slp,
         calculatedConsumption
     }
+
+    setCache({year,consumptionYear,slp},{meta, values},{expire:60*60*24*365, prefix: 'calcprofile-'})
     
     res.send({meta, values})
 }

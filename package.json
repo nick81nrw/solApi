@@ -16,6 +16,7 @@
     "nodemon": "^2.0.22"
   },
   "dependencies": {
+    "async-redis": "^2.0.0",
     "axios": "^1.4.0",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.3.1",

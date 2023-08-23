@@ -210,7 +210,7 @@ const routePvGeneration = async (req,res) => {
     const cacheKey = {lat,lon,power, azimuth, tilt,albedo,cellCoEff,powerInvertor,invertorEfficiency,
         timezone,past_days,horizont,additionalRequestData,timeCycle,summary,start_date,end_date,DEBUG}
 
-    const cached = await getCache(cacheKey)
+    const cached = await getCache(cacheKey, {prefix:'pvcalculation-'})
     
     if (cached) {
         return res.send(cached)
@@ -278,14 +278,14 @@ const routePvGeneration = async (req,res) => {
 
     try {
         console.log(params)
-        const weatherCached = await getCache({weatherRequestUrl,params})
-        const response = weatherCached ? weatherCached : await axios.get(weatherRequestUrl,{params})
+        const weatherCached = await getCache({weatherRequestUrl,params},{prefix:'weather-'})
+        const response = weatherCached ? JSON.parse(weatherCached) : await axios.get(weatherRequestUrl,{params}).then(r => r.data)
         
-        await setCache({weatherRequestUrl,params}, response)
+        await setCache({weatherRequestUrl,params}, response, {prefix:'weather-'})
 
-        const values = calculateForcast({lat,lon, weatherData: response.data, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary, timezone})
+        const values = calculateForcast({lat,lon, weatherData: response, azimuth, tilt, cellCoEff, power, albedo, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary, timezone})
         
-        await setCache(cacheKey, {meta, ...values})
+        await setCache(cacheKey, {meta, ...values}, {prefix:'pvcalculation-'})
         res.send({meta, ...values})
     } catch(e) {
         console.log(e)
