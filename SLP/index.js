@@ -116,7 +116,7 @@ const routeCalcProfile = async (req, res) => {
         calculatedConsumption
     }
 
-    setCache({year,consumptionYear,slp},{meta, values},{expire:60*60*24*365, prefix: 'calcprofile-'})
+    setCache({year,consumptionYear,slp},{meta, values},{expire:60*60*24*30, prefix: 'calcprofile-'})
     
     res.send({meta, values})
 }

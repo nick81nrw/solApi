@@ -20,7 +20,7 @@ app.use(express.urlencoded({extended:false}))
 
 app.use(sessions({
     secret: process.env.SESSION_SECRET || [...Array(30)].map(x => Math.floor(Math.random()*10)).join(''),
-    cookie: {maxAge:1000*60*60*24},
+    cookie: {maxAge:1000*60*60*24}, // 24h
     resave: false,
     saveUninitialized: true
 }))
@@ -31,6 +31,7 @@ app.use(async (req,res,next)=> {
         const user = await getUserByApiKey(apikey)
         if (user) {
             req.accountType = user.accountType
+            // TODO: save usage
             // req.usageToday = setUsage({user, querystring:req.query})
         } else {
             return res.send({error: 'apikey not fund'}).status(403)
@@ -38,7 +39,6 @@ app.use(async (req,res,next)=> {
     } else {
         req.accountType = 'anonymous'
     }
-
     next()
 })
 

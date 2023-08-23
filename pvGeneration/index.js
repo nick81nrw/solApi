@@ -14,7 +14,6 @@ const megreArraysUnique = (...all) => {
     return newArr.filter( (val, i) => {
         return newArr.indexOf(val) == i
     })
-
 }
 
 const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary, timezone}) => {
@@ -144,10 +143,8 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         },{}))
         
         const summary = summaryObject.length == 1 ? Object.values(summaryObject[0]) : summaryObject.map(s => Object.values(s))
-
         
         return {values:calculations.length == 1 ? calculations[0]:calculations, summary}
-
     }
 
     return {values:calculations.length == 1 ? calculations[0]:calculations}
@@ -157,42 +154,16 @@ const calcCellTemperature = (temperature, totalRadiotionOnCell) => {
     return temperature + 0.0342*totalRadiotionOnCell
 }
 
-// const parseHorizont = (horizontString => {
-//     //TODO: validate input
-
-//     const horizontArr = horizontString.split(',')
-
-//     const horizont = horizontArr.map((elem, i, idx) => {
-//         const azimuthFrom = ((360 / idx.length) * i)-180
-//         const azimuthTo = ((360 / idx.length) * (1+i))-180
-
-//         if (typeof elem == 'number') return {altitude:elem, azimuthFrom,azimuthTo}
-//         if (elem.includes('t')) {
-//             const [altitude, transparency] = elem.split('t')
-//             //TODO: check input 0..1
-//             return { altitude: parseFloat(altitude), transparency: parseFloat(transparency), azimuthFrom,azimuthTo}
-//         }
-//         return {altitude: parseFloat(elem), azimuthFrom,azimuthTo}
-//         })
-
-//     return horizont
-        
-// })
-
-
 
 const routePvGeneration = async (req,res) => {
     
     const lat = validate.lat(req.query.lat)
     const lon = validate.lon(req.query.lon)
     const {power, azimuth, tilt, roofsLen} = validate.powerAzimuthTilt(req.query.power, req.query.azimuth, req.query.tilt)
-    // const power = validate.power(req.query.power)
-    // const azimuth = validate.azimuth(req.query.azimuth)
-    // const tilt = validate.tilt(req.query.tilt)
+    
     const wrongParameters = [{lat},{lon},{power},{azimuth},{tilt}].map(p => Object.values(p)[0] ? false : ({[Object.keys(p)[0]]:req.query[Object.keys(p)[0]]})).filter(p => p !== false)
     if (!lat || !lon || !power || !azimuth  || !tilt) return res.status(400).send({message: 'lat, lon, azimuth, tilt and power must given and valid and azimuth, tilt and power must be the same type (number or array) and the same length if type is array. ',wrongParameters})
     
-    // TODO: Timezone
     const albedo = validate.validateFn(roofsLen, validate.albedo, req.query.albedo) || 0.2
     const cellCoEff = validate.validateFn(roofsLen, validate.cellCoEff, req.query.cellCoEff) || -0.4
     const powerInvertor = validate.validateFn(roofsLen, validate.powerInvertor, req.query.powerInvertor) || power
@@ -246,8 +217,6 @@ const routePvGeneration = async (req,res) => {
         timezone,
     }
     
-
-
     if (req.path == '/forecast') {
 
         params = {...baseParams,past_days}
