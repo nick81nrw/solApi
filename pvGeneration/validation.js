@@ -89,6 +89,7 @@ module.exports = {
         return false
     },
     cellCoEff: value => {
+        console.log(value)
         if (toFloat(value) && value >= -1 && value <= 0) return toFloat(value)
         return false
     },
@@ -97,7 +98,7 @@ module.exports = {
         return false
     },
     invertorEfficiency: value => {
-        if (toInt(value) && value >= 0 &&  value <= 1) return toInt(value)
+        if (toFloat(value) && value >= 0 &&  value <= 1) return toFloat(value)
         return false
     },
     past_days: value => {
