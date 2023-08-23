@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Akkudoktor API",
-    "description": "Willkommen bei der API von Akkudoktor. Diese API stellt Ihre Daten ist nach der OpenAPI 3.0 Spezifikation bereit und ist aktuell kostenlos. \nDie Logik zur Berechnung haben wir mit freundlicher Unterstützung von [solXpect](https://f-droid.org/packages/org.woheller69.solxpect/) genutzt. Vielen Dank hierfür noch mal an Herrn Dr. Heller.\n\nYou can now help us improve the API whether it's by making changes to the definition itself or to the code.\nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.\n\n_If you're looking for the Swagger 2.0/OAS 2.0 version of Petstore, then click [here](https://editor.swagger.io/?url=https://petstore.swagger.io/v2/swagger.yaml). Alternatively, you can load via the `Edit > Load Petstore OAS 2.0` menu option!_\n\nSome useful links:\n- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)\n- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)",
+    "description": "Willkommen bei der API von Akkudoktor. Diese API stellt Ihre Daten ist nach der OpenAPI 3.0 Spezifikation bereit und ist aktuell kostenlos. Du kannst dich aber auch an der API [registrieren](/account) oder mit den [Forum-Login](/login) anmelden. Je nach Auslastung des Servers könnte es zu einer Einschränkung der Kostenlosen Nutzung der API kommen. Bitte bedenkt, das die Berechnung ziemlich viel Rechenpower und Datentransfer benötigt. Für einen kostenlosen Betrieb sind wir auf [Spenden]() angewiesen.\n\nDie Logik zur Berechnung haben wir mit freundlicher Unterstützung von [solXpect](https://f-droid.org/packages/org.woheller69.solxpect/) genutzt. Vielen Dank hierfür noch mal an Herrn Dr. Heller. \n\nWir werden die Funktionen der API verbessern und weiterentwickeln. \n\n\n\nEIn paar interessante Links:\n- [Akkudoktor Forum](https://www.akkudoktor.net)",
     "termsOfService": "http://swagger.io/terms/",
     "contact": {
       "email": "apiteam@akkudoktor.net"
@@ -20,19 +20,20 @@
   "servers": [
     {
       "url": "https://api.akkudoktor.net/"
-    },
-    {
-      "url": "http://localhost:5555"
     }
   ],
   "tags": [
     {
       "name": "pv generation calculation",
-      "description": "generate pv generation data from weather forcast or archived data",
-      "externalDocs": {
-        "description": "Find out more",
-        "url": "http://swagger.io"
-      }
+      "description": "generate pv generation data from weather forcast or archived data"
+    },
+    {
+      "name": "prices",
+      "description": "get hourly price information "
+    },
+    {
+      "name": "Default Load Profiles",
+      "description": "calculate load profiles for a special year "
     }
   ],
   "paths": {
@@ -107,8 +108,7 @@
             "required": false,
             "schema": {
               "type": "number",
-              "default": 0,
-              "example": 5
+              "default": 0
             }
           },
           {
@@ -122,7 +122,6 @@
                 "hourly",
                 "minutely_15"
               ],
-              "example": "hourly",
               "default": "hourly"
             }
           },
@@ -134,8 +133,7 @@
             "schema": {
               "type": "number",
               "format": "float",
-              "default": -0.4,
-              "example": -0.36
+              "default": -0.4
             }
           },
           {
@@ -146,8 +144,7 @@
             "schema": {
               "type": "number",
               "format": "float",
-              "default": 0.2,
-              "example": 0.25
+              "default": 0.2
             }
           },
           {
@@ -157,7 +154,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "example": "Europe/Berlin"
+              "default": "Europe/Berlin"
             }
           },
           {
@@ -168,7 +165,8 @@
             "schema": {
               "type": "number",
               "format": "float",
-              "example": 4500
+              "default": "[None]",
+              "example": 5000
             }
           },
           {
@@ -179,8 +177,7 @@
             "schema": {
               "type": "number",
               "format": "float",
-              "default": 1,
-              "example": 0.95
+              "default": 1
             }
           },
           {
@@ -190,6 +187,7 @@
             "required": false,
             "schema": {
               "type": "string",
+              "default": "[None]",
               "example": "10,15,20t30,0"
             }
           },
@@ -222,10 +220,10 @@
             }
           },
           "400": {
-            "description": "Invalid ID supplied"
+            "description": "Invalid"
           },
           "404": {
-            "description": "Pet not found"
+            "description": "not found"
           }
         }
       }
@@ -385,10 +383,10 @@
             }
           },
           "400": {
-            "description": "Invalid ID supplied"
+            "description": "Invalid"
           },
           "404": {
-            "description": "Pet not found"
+            "description": "not found"
           }
         }
       }
@@ -454,10 +452,10 @@
             }
           },
           "400": {
-            "description": "Invalid ID supplied"
+            "description": "Invalid"
           },
           "404": {
-            "description": "Pet not found"
+            "description": "not found"
           }
         }
       }
@@ -522,10 +520,10 @@
             }
           },
           "400": {
-            "description": "Invalid ID supplied"
+            "description": "Invalid"
           },
           "404": {
-            "description": "Pet not found"
+            "description": "not found"
           }
         }
       }
