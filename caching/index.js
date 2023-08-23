@@ -18,7 +18,10 @@ const getCache = async (key,options = {}) => {
     } else {
         const redis = await redisClient
         const cached = await redis.get(hashKey)
-        if (cached) console.log('cached', hashKey)
+        if (cached) {
+            const expire = await redis.ttl(hashKey)
+            console.log('cached', expire+'sec', hashKey)
+        }
         if (!cached) return null
         return cached
     }
@@ -39,7 +42,7 @@ const setCache = async (key,data,options={}) => {
         return true
     } else {
         const redis = await redisClient
-        return await redis.set(hashKey,JSON.stringify(data))
+        return await redis.setex(hashKey, expire, JSON.stringify(data))
     }
 
 }
