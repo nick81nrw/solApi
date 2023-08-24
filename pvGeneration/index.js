@@ -322,7 +322,7 @@ const routePvGeneration = async (req,res) => {
         
     } else if (req.path == '/forecast2') {
 
-        params = {...baseParams,past_days, models: 'icon_d2', forecast_days:1}
+        params = {...baseParams,past_days, models: 'icon_d2', forecast_days:2}
         meta = {...baseMeta, past_days}
         weatherRequestUrl = 'https://ensemble-api.open-meteo.com/v1/ensemble'
     
