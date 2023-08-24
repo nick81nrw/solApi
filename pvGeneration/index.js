@@ -20,11 +20,12 @@ const getStatisticValues = arr => {
     if (!(Array.isArray(arr) && arr.length > 0)) return null
     const error = arr.reduce((prev,curr)=>typeof curr !== 'number',false)
     if (error) return null
-    const sum = arr.reduce((prev,curr,i,arr) => prev + curr ,0)
-    const max = arr.reduce((prev,curr) => curr > prev ? curr : prev,0)
-    const min = arr.reduce((prev,curr) => curr < prev || prev == 0 ? curr : prev,0)
-    const avg = sum / arr.length
-    const sort = [...arr].sort()
+    const numbers = arr.map(v => parseFloat(v))
+    const sum = numbers.reduce((prev,curr) => prev + curr ,0)
+    const max = Math.max(...numbers)
+    const min = Math.min(...numbers)
+    const avg = sum / numbers.length
+    const sort = [...numbers].sort()
     const median = sort.length % 2 == 1 ? sort[Math.floor(sort.length/2)] : sort.slice(sort.length/2-1,sort.length/2+1).reduce((prev,curr) => prev+curr)/2
     return {sum,max,min,avg,median}
 }
@@ -84,18 +85,18 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
 
             
             //min/max/avg calc if "ensemble" is used
-            const maxDniRad = statsDni && statsDni[idx] && statsDni[idx].max ? statsDni[idx].max : 0
-            const maxDiffuseRad = statsDiffuse && statsDiffuse[idx] && statsDiffuse[idx].max ? statsDiffuse[idx].max : 0
-            const maxShortwaveRad = statsShortwave && statsShortwave[idx] && statsShortwave[idx].max ? statsShortwave[idx].max : 0
-            const minDniRad = statsDni && statsDni[idx] && statsDni[idx].min ? statsDni[idx].min : 0
-            const minDiffuseRad = statsDiffuse && statsDiffuse[idx] && statsDiffuse[idx].min ? statsDiffuse[idx].min : 0
-            const minShortwaveRad = statsShortwave && statsShortwave[idx] && statsShortwave[idx].min ? statsShortwave[idx].min : 0
-            const avgDniRad = statsDni && statsDni[idx] && statsDni[idx].avg ? statsDni[idx].avg : 0
-            const avgDiffuseRad = statsDiffuse && statsDiffuse[idx] && statsDiffuse[idx].avg ? statsDiffuse[idx].avg : 0
-            const avgShortwaveRad = statsShortwave && statsShortwave[idx] && statsShortwave[idx].avg ? statsShortwave[idx].avg : 0
-            const medianDniRad = statsDni && statsDni[idx] && statsDni[idx].median ? statsDni[idx].median : 0
-            const medianDiffuseRad = statsDiffuse && statsDiffuse[idx] && statsDiffuse[idx].median ? statsDiffuse[idx].median : 0
-            const medianShortwaveRad = statsShortwave && statsShortwave[idx] && statsShortwave[idx].median ? statsShortwave[idx].median : 0
+            const maxDniRad = statsDni !== null && statsDni[idx] && statsDni[idx].max ? statsDni[idx].max : 0
+            const maxDiffuseRad = statsDiffuse !== null && statsDiffuse[idx] && statsDiffuse[idx].max ? statsDiffuse[idx].max : 0
+            const maxShortwaveRad = statsShortwave !== null && statsShortwave[idx] && statsShortwave[idx].max ? statsShortwave[idx].max : 0
+            const minDniRad = statsDni !== null && statsDni[idx] && statsDni[idx].min ? statsDni[idx].min : 0
+            const minDiffuseRad = statsDiffuse !== null && statsDiffuse[idx] && statsDiffuse[idx].min ? statsDiffuse[idx].min : 0
+            const minShortwaveRad = statsShortwave !== null && statsShortwave[idx] && statsShortwave[idx].min ? statsShortwave[idx].min : 0
+            const avgDniRad = statsDni !== null && statsDni[idx] && statsDni[idx].avg ? statsDni[idx].avg : 0
+            const avgDiffuseRad = statsDiffuse !== null && statsDiffuse[idx] && statsDiffuse[idx].avg ? statsDiffuse[idx].avg : 0
+            const avgShortwaveRad = statsShortwave !== null && statsShortwave[idx] && statsShortwave[idx].avg ? statsShortwave[idx].avg : 0
+            const medianDniRad = statsDni !== null && statsDni[idx] && statsDni[idx].median ? statsDni[idx].median : 0
+            const medianDiffuseRad = statsDiffuse !== null && statsDiffuse[idx] && statsDiffuse[idx].median ? statsDiffuse[idx].median : 0
+            const medianShortwaveRad = statsShortwave !== null && statsShortwave[idx] && statsShortwave[idx].median ? statsShortwave[idx].median : 0
             // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
@@ -141,7 +142,7 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
             const acPower = weatherData.minutely_15 ? acPowerComplete /4 : acPowerComplete
             
             //TODO: Use min/max/avg
-            const totalMaxRadiationOnCell = maxDniRad && maxDiffuseRad && maxShortwaveRad ? maxDniRad * efficiency + maxDiffuseRad * diffuseEfficiency + maxShortwaveRad * shortwaveEfficiency * albedoVal : 0
+            const totalMaxRadiationOnCell = maxDniRad !== null && maxDiffuseRad !== null && maxShortwaveRad !== null ? maxDniRad * efficiency + maxDiffuseRad * diffuseEfficiency + maxShortwaveRad * shortwaveEfficiency * albedoVal : 0
             const maxCellTemperature = calcCellTemperature(temperature, totalMaxRadiationOnCell) // max Temperature??
             const dcMaxPowerComplete = totalMaxRadiationOnCell / 1000 * powerVal * (1 + (maxCellTemperature - 25) * (cellCoEffVal/100))
             const dcMaxPower = weatherData.minutely_15 ? dcMaxPowerComplete /4 : dcMaxPowerComplete
@@ -149,27 +150,28 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
             const acMaxPower = weatherData.minutely_15 ? acMaxPowerComplete /4 : acMaxPowerComplete
             
             
-            const totalMinRadiationOnCell = minDniRad && minDiffuseRad && minShortwaveRad ? minDniRad * efficiency + minDiffuseRad * diffuseEfficiency + minShortwaveRad * shortwaveEfficiency * albedoVal : 0
+            const totalMinRadiationOnCell = minDniRad !== null && minDiffuseRad !== null && minShortwaveRad !== null ? minDniRad * efficiency + minDiffuseRad * diffuseEfficiency + minShortwaveRad * shortwaveEfficiency * albedoVal : 0
             const minCellTemperature = calcCellTemperature(temperature, totalMinRadiationOnCell) // min Temperature??
             const dcMinPowerComplete = totalMinRadiationOnCell / 1000 * powerVal * (1 + (minCellTemperature - 25) * (cellCoEffVal/100))
             const dcMinPower = weatherData.minutely_15 ? dcMinPowerComplete /4 : dcMinPowerComplete
             const acMinPowerComplete = dcMinPowerComplete > powerInvertorVal ? powerInvertorVal * invertorEfficiencyVal : dcMinPowerComplete * invertorEfficiencyVal
             const acMinPower = weatherData.minutely_15 ? acMinPowerComplete /4 : acMinPowerComplete
             
-            const totalAvgRadiationOnCell = avgDniRad && avgDiffuseRad && avgShortwaveRad ? avgDniRad * efficiency + avgDiffuseRad * diffuseEfficiency + avgShortwaveRad * shortwaveEfficiency * albedoVal : 0
+            const totalAvgRadiationOnCell = avgDniRad !== null && avgDiffuseRad !== null && avgShortwaveRad !== null ? avgDniRad * efficiency + avgDiffuseRad * diffuseEfficiency + avgShortwaveRad * shortwaveEfficiency * albedoVal : 0
             const avgCellTemperature = calcCellTemperature(temperature, totalAvgRadiationOnCell) // avg Temperature??
             const dcAvgPowerComplete = totalAvgRadiationOnCell / 1000 * powerVal * (1 + (avgCellTemperature - 25) * (cellCoEffVal/100))
             const dcAvgPower = weatherData.minutely_15 ? dcAvgPowerComplete /4 : dcAvgPowerComplete
             const acAvgPowerComplete = dcAvgPowerComplete > powerInvertorVal ? powerInvertorVal * invertorEfficiencyVal : dcAvgPowerComplete * invertorEfficiencyVal
             const acAvgPower = weatherData.minutely_15 ? acAvgPowerComplete /4 : acAvgPowerComplete
 
-            const totalMedianRadiationOnCell = medianDniRad && medianDiffuseRad && medianShortwaveRad ? medianDniRad * efficiency + medianDiffuseRad * diffuseEfficiency + medianShortwaveRad * shortwaveEfficiency * albedoVal : 0
+            const totalMedianRadiationOnCell = medianDniRad !== null && medianDiffuseRad !== null && medianShortwaveRad !== null ? medianDniRad * efficiency + medianDiffuseRad * diffuseEfficiency + medianShortwaveRad * shortwaveEfficiency * albedoVal : 0
             const medianCellTemperature = calcCellTemperature(temperature, totalMedianRadiationOnCell) // median Temperature??
             const dcMedianPowerComplete = totalMedianRadiationOnCell / 1000 * powerVal * (1 + (medianCellTemperature - 25) * (cellCoEffVal/100))
             const dcMedianPower = weatherData.minutely_15 ? dcMedianPowerComplete /4 : dcMedianPowerComplete
             const acMedianPowerComplete = dcMedianPowerComplete > powerInvertorVal ? powerInvertorVal * invertorEfficiencyVal : dcMedianPowerComplete * invertorEfficiencyVal
             const acMedianPower = weatherData.minutely_15 ? acMedianPowerComplete /4 : acMedianPowerComplete
             
+            // console.log({acMaxPower,acMinPower, acAvgPower, acMedianPower})
             
             const calcResult = {
                 datetime: localTime,
