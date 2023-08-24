@@ -16,6 +16,37 @@ const megreArraysUnique = (...all) => {
     })
 }
 
+const getStatisticValues = arr => {
+    if (!(Array.isArray(arr) && arr.length > 0)) return null
+    const error = arr.reduce((prev,curr)=>typeof curr !== 'number',false)
+    if (error) return null
+    const sum = arr.reduce((prev,curr,i,arr) => prev + curr ,0)
+    const max = arr.reduce((prev,curr) => curr > prev ? curr : prev,0)
+    const min = arr.reduce((prev,curr) => curr < prev || prev == 0 ? curr : prev,0)
+    const avg = sum / arr.length
+    const sort = [...arr].sort()
+    const median = sort.length % 2 == 1 ? sort[Math.floor(sort.length/2)] : sort.slice(sort.length/2-1,sort.length/2+1).reduce((prev,curr) => prev+curr)/2
+    return {sum,max,min,avg,median}
+}
+
+const covertArray = (dataTimeline, searchKey) => {
+    if (Object.keys(dataTimeline).find(e => e.startsWith(searchKey))){
+
+        const keys = Object.keys(dataTimeline).filter(e => e.startsWith(searchKey))
+        const values = keys
+                .map(k => dataTimeline[k])
+                .reduce((prev,curr) => {
+                    curr.map((e,i) => {
+                        if (!prev[i]) return prev[i] = [e]
+                        prev[i].push(e)
+                    })
+                    return prev
+                },[])
+                .map(val => getStatisticValues(val) )
+        return values
+    } else { return 0}
+}
+
 const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInvertor, invertorEfficiency, DEBUG, additionalRequestData, horizont, summary, timezone}) => {
 
     power = Array.isArray(power) ? power : [power]
@@ -38,14 +69,36 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
         const dataTimeline = weatherData && weatherData.minutely_15 ? weatherData.minutely_15 :  weatherData.hourly
     
         if (!dataTimeline) return []
-    
+        
+        // const statsTemperature = covertArray(dataTimeline, 'temperature_2m_')
+        const statsDni = covertArray(dataTimeline, 'direct_normal_irradiance_')
+        const statsDiffuse = covertArray(dataTimeline, 'diffuse_radiation_')
+        const statsShortwave = covertArray(dataTimeline, 'shortwave_radiation_')
+
+
         const values = dataTimeline.time.map((time, idx) => {
             const dniRad = dataTimeline.direct_normal_irradiance[idx]
             const diffuseRad = dataTimeline.diffuse_radiation[idx]
             const shortwaveRad = dataTimeline.shortwave_radiation[idx]
             const temperature = dataTimeline.temperature_2m[idx]
-    
-            // const t = new Date(time)
+
+            
+            //min/max/avg calc if "ensemble" is used
+            const maxDniRad = statsDni && statsDni[idx] && statsDni[idx].max ? statsDni[idx].max : 0
+            const maxDiffuseRad = statsDiffuse && statsDiffuse[idx] && statsDiffuse[idx].max ? statsDiffuse[idx].max : 0
+            const maxShortwaveRad = statsShortwave && statsShortwave[idx] && statsShortwave[idx].max ? statsShortwave[idx].max : 0
+            const minDniRad = statsDni && statsDni[idx] && statsDni[idx].min ? statsDni[idx].min : 0
+            const minDiffuseRad = statsDiffuse && statsDiffuse[idx] && statsDiffuse[idx].min ? statsDiffuse[idx].min : 0
+            const minShortwaveRad = statsShortwave && statsShortwave[idx] && statsShortwave[idx].min ? statsShortwave[idx].min : 0
+            const avgDniRad = statsDni && statsDni[idx] && statsDni[idx].avg ? statsDni[idx].avg : 0
+            const avgDiffuseRad = statsDiffuse && statsDiffuse[idx] && statsDiffuse[idx].avg ? statsDiffuse[idx].avg : 0
+            const avgShortwaveRad = statsShortwave && statsShortwave[idx] && statsShortwave[idx].avg ? statsShortwave[idx].avg : 0
+            const medianDniRad = statsDni && statsDni[idx] && statsDni[idx].median ? statsDni[idx].median : 0
+            const medianDiffuseRad = statsDiffuse && statsDiffuse[idx] && statsDiffuse[idx].median ? statsDiffuse[idx].median : 0
+            const medianShortwaveRad = statsShortwave && statsShortwave[idx] && statsShortwave[idx].median ? statsShortwave[idx].median : 0
+            // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
             const t = moment(time).tz(timezone)
             const localTime = t.toISOString(true).slice(0,-6)
     
@@ -81,12 +134,43 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
     
             const totalRadiationOnCell = dniRad * efficiency + diffuseRad * diffuseEfficiency + shortwaveRad * shortwaveEfficiency * albedoVal
             const cellTemperature = calcCellTemperature(temperature, totalRadiationOnCell)
-            
+
             const dcPowerComplete = totalRadiationOnCell / 1000 * powerVal * (1 + (cellTemperature - 25) * (cellCoEffVal/100))
             const dcPower = weatherData.minutely_15 ? dcPowerComplete /4 : dcPowerComplete
             const acPowerComplete = dcPowerComplete > powerInvertorVal ? powerInvertorVal * invertorEfficiencyVal : dcPowerComplete * invertorEfficiencyVal
             const acPower = weatherData.minutely_15 ? acPowerComplete /4 : acPowerComplete
-    
+            
+            //TODO: Use min/max/avg
+            const totalMaxRadiationOnCell = maxDniRad && maxDiffuseRad && maxShortwaveRad ? maxDniRad * efficiency + maxDiffuseRad * diffuseEfficiency + maxShortwaveRad * shortwaveEfficiency * albedoVal : 0
+            const maxCellTemperature = calcCellTemperature(temperature, totalMaxRadiationOnCell) // max Temperature??
+            const dcMaxPowerComplete = totalMaxRadiationOnCell / 1000 * powerVal * (1 + (maxCellTemperature - 25) * (cellCoEffVal/100))
+            const dcMaxPower = weatherData.minutely_15 ? dcMaxPowerComplete /4 : dcMaxPowerComplete
+            const acMaxPowerComplete = dcMaxPowerComplete > powerInvertorVal ? powerInvertorVal * invertorEfficiencyVal : dcMaxPowerComplete * invertorEfficiencyVal
+            const acMaxPower = weatherData.minutely_15 ? acMaxPowerComplete /4 : acMaxPowerComplete
+            
+            
+            const totalMinRadiationOnCell = minDniRad && minDiffuseRad && minShortwaveRad ? minDniRad * efficiency + minDiffuseRad * diffuseEfficiency + minShortwaveRad * shortwaveEfficiency * albedoVal : 0
+            const minCellTemperature = calcCellTemperature(temperature, totalMinRadiationOnCell) // min Temperature??
+            const dcMinPowerComplete = totalMinRadiationOnCell / 1000 * powerVal * (1 + (minCellTemperature - 25) * (cellCoEffVal/100))
+            const dcMinPower = weatherData.minutely_15 ? dcMinPowerComplete /4 : dcMinPowerComplete
+            const acMinPowerComplete = dcMinPowerComplete > powerInvertorVal ? powerInvertorVal * invertorEfficiencyVal : dcMinPowerComplete * invertorEfficiencyVal
+            const acMinPower = weatherData.minutely_15 ? acMinPowerComplete /4 : acMinPowerComplete
+            
+            const totalAvgRadiationOnCell = avgDniRad && avgDiffuseRad && avgShortwaveRad ? avgDniRad * efficiency + avgDiffuseRad * diffuseEfficiency + avgShortwaveRad * shortwaveEfficiency * albedoVal : 0
+            const avgCellTemperature = calcCellTemperature(temperature, totalAvgRadiationOnCell) // avg Temperature??
+            const dcAvgPowerComplete = totalAvgRadiationOnCell / 1000 * powerVal * (1 + (avgCellTemperature - 25) * (cellCoEffVal/100))
+            const dcAvgPower = weatherData.minutely_15 ? dcAvgPowerComplete /4 : dcAvgPowerComplete
+            const acAvgPowerComplete = dcAvgPowerComplete > powerInvertorVal ? powerInvertorVal * invertorEfficiencyVal : dcAvgPowerComplete * invertorEfficiencyVal
+            const acAvgPower = weatherData.minutely_15 ? acAvgPowerComplete /4 : acAvgPowerComplete
+
+            const totalMedianRadiationOnCell = medianDniRad && medianDiffuseRad && medianShortwaveRad ? medianDniRad * efficiency + medianDiffuseRad * diffuseEfficiency + medianShortwaveRad * shortwaveEfficiency * albedoVal : 0
+            const medianCellTemperature = calcCellTemperature(temperature, totalMedianRadiationOnCell) // median Temperature??
+            const dcMedianPowerComplete = totalMedianRadiationOnCell / 1000 * powerVal * (1 + (medianCellTemperature - 25) * (cellCoEffVal/100))
+            const dcMedianPower = weatherData.minutely_15 ? dcMedianPowerComplete /4 : dcMedianPowerComplete
+            const acMedianPowerComplete = dcMedianPowerComplete > powerInvertorVal ? powerInvertorVal * invertorEfficiencyVal : dcMedianPowerComplete * invertorEfficiencyVal
+            const acMedianPower = weatherData.minutely_15 ? acMedianPowerComplete /4 : acMedianPowerComplete
+            
+            
             const calcResult = {
                 datetime: localTime,
                 dcPower,
@@ -95,6 +179,15 @@ const calculateForcast = ({weatherData, power, tilt, azimuth, lat, lon, albedo, 
                 sunAzimuth,
                 temperature,
             }
+            if (dcMaxPower) calcResult.dcMaxPower = dcMaxPower
+            if (acMaxPower) calcResult.acMaxPower = acMaxPower
+            if (dcMinPower) calcResult.dcMinPower = dcMinPower
+            if (acMinPower) calcResult.acMinPower = acMinPower
+            if (dcAvgPower) calcResult.dcAvgPower = dcAvgPower
+            if (acAvgPower) calcResult.acAvgPower = acAvgPower
+            if (dcMedianPower) calcResult.dcMedianPower = dcMedianPower
+            if (acMedianPower) calcResult.acMedianPower = acMedianPower
+
             if (additionalRequestData.length > 0) {
                 additionalRequestData.forEach(elem => {
                     calcResult[elem] = dataTimeline[elem][idx]
@@ -178,7 +271,7 @@ const routePvGeneration = async (req,res) => {
     const end_date = past_days > 0 &&  validate.end_date(req.query.end_date) || false
     const DEBUG = !!((req.query.debug ||req.query.DEBUG)  || false)
 
-    const cacheKey = {lat,lon,power, azimuth, tilt,albedo,cellCoEff,powerInvertor,invertorEfficiency,
+    const cacheKey = {path: req.path,lat,lon,power, azimuth, tilt,albedo,cellCoEff,powerInvertor,invertorEfficiency,
         timezone,past_days,horizont,additionalRequestData,timeCycle,summary,start_date,end_date,DEBUG}
 
     const cached = await getCache(cacheKey, {prefix:'pvcalculation-'})
@@ -225,6 +318,14 @@ const routePvGeneration = async (req,res) => {
     
         
         
+    } else if (req.path == '/forecast2') {
+
+        params = {...baseParams,past_days, models: 'icon_seamless', forecast_days:1}
+        meta = {...baseMeta, past_days}
+        weatherRequestUrl = 'https://ensemble-api.open-meteo.com/v1/ensemble'
+    
+        
+        
     } else if (req.path == '/archive') {
         const yesterday = new Date(new Date() - (1 * 24 * 60 * 60 * 1000))
         const lastWeek = new Date(yesterday - (7 * 24 * 60 *60 * 1000))
@@ -268,5 +369,6 @@ module.exports = {
     calcCellTemperature,
     calculateForcast,
     routePvGeneration,
-    megreArraysUnique
+    megreArraysUnique,
+    getStatisticValues
 }

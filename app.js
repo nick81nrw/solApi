@@ -52,7 +52,7 @@ const rights = types => (req,res,next) => {
     return res.status(403).send({error: `Ressource not allowed in account type ${req.accountType}`})
 }
 
-app.get(['/forecast', '/archive'], routePvGeneration)
+app.get(['/forecast', '/forecast2', '/archive'], routePvGeneration)
 app.get('/prices', routeGetPrices)
 app.get('/defaultloadprofile', routeCalcProfile)
 
