@@ -106,6 +106,7 @@ const calculateForcast = ({weatherData, weatherModelsResponse, power, tilt, azim
             const minDniRad = statsDni !== null && statsDni[idx] && statsDni[idx].min ? statsDni[idx].min : null
             const minDiffuseRad = statsDiffuse !== null && statsDiffuse[idx] && statsDiffuse[idx].min ? statsDiffuse[idx].min : null
             const minShortwaveRad = statsShortwave !== null && statsShortwave[idx] && statsShortwave[idx].min ? statsShortwave[idx].min : null
+            //TODO: min/max Temperature to calc losses ?
             // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 

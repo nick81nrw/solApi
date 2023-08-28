@@ -92,11 +92,11 @@ module.exports = {
         if (toFloat(value) && value >= -1 && value <= 0) return toFloat(value)
         return false
     },
-    powerInvertor: value => {
+    powerInverter: value => {
         if (toInt(value) && value >= 0 ) return toInt(value)
         return false
     },
-    invertorEfficiency: value => {
+    inverterEfficiency: value => {
         if (toFloat(value) && value >= 0 &&  value <= 1) return toFloat(value)
         return false
     },
