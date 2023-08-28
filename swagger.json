@@ -158,9 +158,9 @@
             }
           },
           {
-            "name": "powerInvertor",
+            "name": "powerInverter",
             "in": "query",
-            "description": "max power of the invertor in watts. it will used, if the power of the invertor is lower than the power generation of the modules. default: no limit",
+            "description": "max power of the inverter in watts. it will used, if the power of the inverter is lower than the power generation of the modules. default: no limit",
             "required": false,
             "schema": {
               "type": "number",
@@ -170,7 +170,7 @@
             }
           },
           {
-            "name": "invertorEfficiency",
+            "name": "inverterEfficiency",
             "in": "query",
             "description": "inverter efficiency. default: 1 (=100%)",
             "required": false,
@@ -178,6 +178,17 @@
               "type": "number",
               "format": "float",
               "default": 1
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "description": "returns max- and min generation from differnt weathermodels",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "int",
+              "default": 0
             }
           },
           {
@@ -334,9 +345,9 @@
             "example": "Europe/Berlin"
           },
           {
-            "name": "powerInvertor",
+            "name": "powerInverter",
             "in": "query",
-            "description": "max power of the invertor in watts. it will used, if the power of the invertor is lower than the power generation of the modules. default: no limit",
+            "description": "max power of the inverter in watts. it will used, if the power of the inverter is lower than the power generation of the modules. default: no limit",
             "required": false,
             "schema": {
               "type": "number",
@@ -345,15 +356,16 @@
             "example": 4500
           },
           {
-            "name": "invertorEfficiency",
+            "name": "inverterEfficiency",
             "in": "query",
             "description": "inverter efficiency. default: 1 (=100%)",
             "required": false,
             "schema": {
               "type": "number",
-              "format": "float"
-            },
-            "example": 0.95
+              "format": "float",
+              "default": 1,
+              "example": 0.95
+            }
           },
           {
             "name": "hourly",
@@ -361,9 +373,10 @@
             "description": "additional hourly data from open-meteo with \",\" splittet values. \nCheck https://open-meteo.com/en/docs/dwd-api",
             "required": false,
             "schema": {
-              "type": "string"
-            },
-            "example": "relativehumidity_2m,windspeed_10m"
+              "type": "string",
+              "default": "",
+              "example": "relativehumidity_2m,windspeed_10m"
+            }
           }
         ],
         "responses": {
@@ -565,30 +578,33 @@
                 "datetime": {
                   "type": "string",
                   "format": "date-time",
-                  "example": "2023-06-01T06:00:00.000Z"
+                  "example": "2023-08-28T05:00:00.000Z"
                 },
-                "sumgeneration": {
+                "dcPower": {
                   "type": "number",
                   "format": "float",
                   "example": 3504.56
                 },
-                "price": {
+                "power": {
                   "type": "number",
                   "format": "float",
-                  "description": "EEX price for one MWh",
-                  "example": 80.4
+                  "example": 3504.56
+                },
+                "minPower": {
+                  "type": "number",
+                  "format": "float",
+                  "example": 2560.5
+                },
+                "maxPower": {
+                  "type": "number",
+                  "format": "float",
+                  "example": 4201.5
                 },
                 "temprature": {
                   "type": "number",
                   "format": "float",
                   "description": "temprature in celsius",
                   "example": 15.4
-                },
-                "windspeed": {
-                  "type": "number",
-                  "format": "float",
-                  "description": "windspeed in m/s",
-                  "example": 28.4
                 }
               }
             }
