@@ -282,7 +282,8 @@ const routePvGeneration = async (req,res) => {
         past_days,
         inverterEfficiency,
         powerInverter,
-        cellCoEff
+        cellCoEff,
+        range
     }
 
     if (horizont) baseMeta.horizont = horizont
