@@ -28,7 +28,7 @@ const getCache = async (key,options = {}) => {
 }
 
 const setCache = async (key,data,options={}) => {
-    const expire = options.expire || 60*10
+    const expire = options.expire || 60*60 // 1h default
     const prefix = options.prefix || ''
 
     const hashKey = prefix + crypto.createHash('sha256').update(JSON.stringify(key)).digest('hex')
