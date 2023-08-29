@@ -90,22 +90,25 @@ const calculateForcast = ({weatherData, weatherModelsResponse, power, tilt, azim
         const statsDni = weatherModelsResponse ? covertArray(weatherModelsResponse.hourly, 'direct_normal_irradiance') : null
         const statsDiffuse = weatherModelsResponse ? covertArray(weatherModelsResponse.hourly, 'diffuse_radiation') : null
         const statsShortwave = weatherModelsResponse ? covertArray(weatherModelsResponse.hourly, 'shortwave_radiation') : null
-
-
+        
+        const weatherModelTimeLine = weatherModelsResponse && weatherModelsResponse.hourly &&  weatherModelsResponse.hourly.time ? weatherModelsResponse.hourly.time : null
+        
         const values = dataTimeline.time.map((time, idx) => {
             const dniRad = dataTimeline.direct_normal_irradiance[idx]
             const diffuseRad = dataTimeline.diffuse_radiation[idx]
             const shortwaveRad = dataTimeline.shortwave_radiation[idx]
             const temperature = dataTimeline.temperature_2m[idx]
 
+
+            const statsIdx = weatherModelTimeLine && Array.isArray(weatherModelTimeLine) ? weatherModelTimeLine.indexOf(time) : null
             
             //min/max/avg calc if "ensemble" is used
-            const maxDniRad = statsDni !== null && statsDni[idx] && statsDni[idx].max ? statsDni[idx].max : null
-            const maxDiffuseRad = statsDiffuse !== null && statsDiffuse[idx] && statsDiffuse[idx].max ? statsDiffuse[idx].max : null
-            const maxShortwaveRad = statsShortwave !== null && statsShortwave[idx] && statsShortwave[idx].max ? statsShortwave[idx].max : null
-            const minDniRad = statsDni !== null && statsDni[idx] && statsDni[idx].min ? statsDni[idx].min : null
-            const minDiffuseRad = statsDiffuse !== null && statsDiffuse[idx] && statsDiffuse[idx].min ? statsDiffuse[idx].min : null
-            const minShortwaveRad = statsShortwave !== null && statsShortwave[idx] && statsShortwave[idx].min ? statsShortwave[idx].min : null
+            const maxDniRad = statsIdx !== null && statsDni !== null && statsDni[statsIdx] && statsDni[statsIdx].max ? statsDni[statsIdx].max : null
+            const maxDiffuseRad = statsIdx !== null && statsDiffuse !== null && statsDiffuse[statsIdx] && statsDiffuse[statsIdx].max ? statsDiffuse[statsIdx].max : null
+            const maxShortwaveRad = statsIdx !== null && statsShortwave !== null && statsShortwave[statsIdx] && statsShortwave[statsIdx].max ? statsShortwave[statsIdx].max : null
+            const minDniRad = statsIdx !== null && statsDni !== null && statsDni[statsIdx] && statsDni[statsIdx].min ? statsDni[statsIdx].min : null
+            const minDiffuseRad = statsIdx !== null && statsDiffuse !== null && statsDiffuse[statsIdx] && statsDiffuse[statsIdx].min ? statsDiffuse[statsIdx].min : null
+            const minShortwaveRad = statsIdx !== null && statsShortwave !== null && statsShortwave[statsIdx] && statsShortwave[statsIdx].min ? statsShortwave[statsIdx].min : null
             //TODO: min/max Temperature to calc losses ?
             // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -326,10 +329,11 @@ const routePvGeneration = async (req,res) => {
     }
 
     try {
-        console.log({params})
-
+        console.log({weatherRequestUrl,params})
+        
         const weatherModelUrl = 'https://ensemble-api.open-meteo.com/v1/ensemble'
-        const weatherModelsParams = {...baseParams, models: 'icon_d2', forecast_days:2}
+        const weatherModelsParams = {...baseParams, models: 'icon_d2', forecast_days:2, past_days}
+        if (range) console.log({weatherModelUrl,weatherModelsParams})
         
         const weatherModelsCache = range ? await getCache({weatherModelUrl,weatherModelsParams},{prefix:'weathermodel-'}) : null
         const weatherModelsResponse = weatherModelsCache && range ? JSON.parse(weatherModelsCache) : range && await axios.get(weatherModelUrl,{params: weatherModelsParams}).then(r => r.data)
