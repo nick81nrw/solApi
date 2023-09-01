@@ -62,18 +62,18 @@ const calcRadiadion = ({dni,diffuse,shortwave,efficiency, albedo, temperature, c
 }
 
 
-const calculateForcast = ({weatherData, weatherModelsResponse, power, tilt, azimuth, lat, lon, albedo, cellCoEff, powerInverter, inverterEfficiency, DEBUG, additionalRequestData, horizont, summary, timezone}) => {
+const calculateForcast = ({weatherData, weatherModelsResponse, power, lat, lon, DEBUG, additionalRequestData, summary, timezone,...args}) => {
 
     power = Array.isArray(power) ? power : [power]
     
     const calculations = power.map((powerVal,i) => {
-        azimuth = Array.isArray(azimuth) ? azimuth[i] : azimuth
-        tilt = Array.isArray(tilt) ? tilt[i] : tilt
-        albedo = Array.isArray(albedo) ? albedo[i] : albedo
-        cellCoEff = Array.isArray(cellCoEff) ? cellCoEff[i] : cellCoEff
-        powerInverter = Array.isArray(powerInverter) ? powerInverter[i] : powerInverter
-        inverterEfficiency = Array.isArray(inverterEfficiency) ? inverterEfficiency[i] : inverterEfficiency
-        horizont = Array.isArray(horizont) && Array.isArray(horizont[0])  ? horizont[i] : horizont
+        const azimuth = Array.isArray(args.azimuth) ? args.azimuth[i] : args.azimuth
+        const tilt = Array.isArray(args.tilt) ? args.tilt[i] : args.tilt
+        const albedo = Array.isArray(args.albedo) ? args.albedo[i] : args.albedo
+        const cellCoEff = Array.isArray(args.cellCoEff) ? args.cellCoEff[i] : args.cellCoEff
+        const powerInverter = Array.isArray(args.powerInverter) ? args.powerInverter[i] : args.powerInverter
+        const inverterEfficiency = Array.isArray(args.inverterEfficiency) ? args.inverterEfficiency[i] : args.inverterEfficiency
+        const horizont = Array.isArray(args.horizont) && Array.isArray(args.horizont[0])  ? args.horizont[i] : args.horizont
 
         const pvVectors = [
             Math.sin(azimuth/180*Math.PI) * Math.cos((90-tilt) / 180 * Math.PI),
