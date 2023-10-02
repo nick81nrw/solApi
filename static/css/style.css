@@ -1,0 +1,42 @@
+body{
+    height:100%;
+    margin:1em;
+    font-family: verdana, sans-serif;
+}
+
+h2::before {
+    margin: 5px;
+    width: 100px;
+    height: 98px;
+    content: url("https://akkudoktor.net/wp-content/uploads/2022/11/logo.png");
+    display:block;
+}
+
+/*++++++++++++++++++++++++++++++ formular formatierung*/
+label,input{
+    display:block;
+}
+
+input{
+    margin-bottom:5px;
+    border: 1px solid grey;
+    border-radius: 3px;
+    padding: 5px;
+    box-shadow: 1.5px 1.5px lightgrey
+}
+
+/*++++++++++++++++++++++++++++++ media queries*/
+@media
+ screen and (max-width:1010px){
+
+}
+
+@media
+ screen and (max-width:44em){
+
+}
+
+@media
+ screen and (max-width:28em){
+
+}
