@@ -3,6 +3,7 @@ const crypto = require('crypto')
 const redisClient = require('./redis')
 
 const DEV = !(process.env.NODE_ENV == 'production')
+const devCache = {}
 
 const getCache = async (key,options = {}) => {
     const prefix = options.prefix || ''
