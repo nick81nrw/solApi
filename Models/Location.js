@@ -16,7 +16,7 @@ const battery = mongoose.Schema({
     loadEfficiency: Number,
     unloadEfficiency: Number,
     minSoc: Number,
-    maxmSoc: Number,
+    maxSoc: Number,
 })
 
 const locationSchema = mongoose.Schema({
